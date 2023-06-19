@@ -9789,27 +9789,21 @@ type 0207, grid 8 mm</description>
 </instance>
 <instance part="R1" gate="G$1" x="99.06" y="114.3" smashed="yes" rot="R180">
 <attribute name="NAME" x="102.87" y="112.8014" size="1.778" layer="95" rot="R180"/>
-<attribute name="VALUE" x="102.87" y="117.602" size="1.778" layer="96" rot="R180"/>
 </instance>
 <instance part="R2" gate="G$1" x="99.06" y="119.38" smashed="yes" rot="R180">
 <attribute name="NAME" x="102.87" y="117.8814" size="1.778" layer="95" rot="R180"/>
-<attribute name="VALUE" x="102.87" y="122.682" size="1.778" layer="96" rot="R180"/>
 </instance>
 <instance part="R3" gate="G$1" x="99.06" y="124.46" smashed="yes" rot="R180">
 <attribute name="NAME" x="102.87" y="122.9614" size="1.778" layer="95" rot="R180"/>
-<attribute name="VALUE" x="102.87" y="127.762" size="1.778" layer="96" rot="R180"/>
 </instance>
 <instance part="R4" gate="G$1" x="38.1" y="129.54" smashed="yes" rot="R180">
 <attribute name="NAME" x="41.91" y="128.0414" size="1.778" layer="95" rot="R180"/>
-<attribute name="VALUE" x="41.91" y="132.842" size="1.778" layer="96" rot="R180"/>
 </instance>
 <instance part="R5" gate="G$1" x="38.1" y="134.62" smashed="yes" rot="R180">
 <attribute name="NAME" x="41.91" y="133.1214" size="1.778" layer="95" rot="R180"/>
-<attribute name="VALUE" x="41.91" y="137.922" size="1.778" layer="96" rot="R180"/>
 </instance>
 <instance part="R6" gate="G$1" x="38.1" y="139.7" smashed="yes" rot="R180">
 <attribute name="NAME" x="41.91" y="138.2014" size="1.778" layer="95" rot="R180"/>
-<attribute name="VALUE" x="41.91" y="143.002" size="1.778" layer="96" rot="R180"/>
 </instance>
 <instance part="R7" gate="G$1" x="127" y="93.98" smashed="yes">
 <attribute name="NAME" x="123.19" y="95.4786" size="1.778" layer="95"/>
@@ -9821,11 +9815,9 @@ type 0207, grid 8 mm</description>
 </instance>
 <instance part="R9" gate="G$1" x="17.78" y="25.4" smashed="yes">
 <attribute name="NAME" x="13.97" y="26.8986" size="1.778" layer="95"/>
-<attribute name="VALUE" x="13.97" y="22.098" size="1.778" layer="96"/>
 </instance>
 <instance part="R10" gate="G$1" x="17.78" y="17.78" smashed="yes">
 <attribute name="NAME" x="13.97" y="19.2786" size="1.778" layer="95"/>
-<attribute name="VALUE" x="13.97" y="14.478" size="1.778" layer="96"/>
 </instance>
 <instance part="JP1" gate="A" x="43.18" y="157.48" smashed="yes" rot="MR180">
 <attribute name="NAME" x="36.83" y="149.225" size="1.778" layer="95" rot="MR180"/>
@@ -10671,7 +10663,7 @@ type 0207, grid 8 mm</description>
 <junction x="45.72" y="121.92"/>
 </segment>
 </net>
-<net name="N$7" class="0">
+<net name="OUTA-L2" class="0">
 <segment>
 <pinref part="R2" gate="G$1" pin="1"/>
 <pinref part="U1" gate="A" pin="PC14-OSC32_IN"/>
@@ -10680,7 +10672,7 @@ type 0207, grid 8 mm</description>
 <wire x1="111.76" y1="99.06" x2="106.68" y2="99.06" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$9" class="0">
+<net name="OUTA-L3" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PC15-OSC32_OUT"/>
 <wire x1="106.68" y1="96.52" x2="114.3" y2="96.52" width="0.1524" layer="91"/>
@@ -10689,7 +10681,7 @@ type 0207, grid 8 mm</description>
 <pinref part="R3" gate="G$1" pin="1"/>
 </segment>
 </net>
-<net name="N$8" class="0">
+<net name="OUTA-L1" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PC13"/>
 <wire x1="106.68" y1="101.6" x2="109.22" y2="101.6" width="0.1524" layer="91"/>
@@ -10698,7 +10690,7 @@ type 0207, grid 8 mm</description>
 <wire x1="109.22" y1="114.3" x2="104.14" y2="114.3" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$10" class="0">
+<net name="OUTB-L1" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PA8"/>
 <wire x1="45.72" y1="81.28" x2="15.24" y2="81.28" width="0.1524" layer="91"/>
@@ -10707,7 +10699,7 @@ type 0207, grid 8 mm</description>
 <wire x1="15.24" y1="129.54" x2="33.02" y2="129.54" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$11" class="0">
+<net name="OUTB-L2" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PA15"/>
 <wire x1="45.72" y1="63.5" x2="12.7" y2="63.5" width="0.1524" layer="91"/>
@@ -10716,7 +10708,7 @@ type 0207, grid 8 mm</description>
 <wire x1="12.7" y1="134.62" x2="33.02" y2="134.62" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$12" class="0">
+<net name="OUTB-L3" class="0">
 <segment>
 <pinref part="R6" gate="G$1" pin="2"/>
 <wire x1="10.16" y1="30.48" x2="10.16" y2="139.7" width="0.1524" layer="91"/>
@@ -10811,14 +10803,14 @@ type 0207, grid 8 mm</description>
 <wire x1="119.38" y1="86.36" x2="121.92" y2="86.36" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$20" class="0">
+<net name="OUTD15" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PB13"/>
 <pinref part="D15" gate="G$1" pin="C"/>
 <wire x1="45.72" y1="25.4" x2="33.02" y2="25.4" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$21" class="0">
+<net name="OUTD16" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PB14"/>
 <wire x1="45.72" y1="22.86" x2="35.56" y2="22.86" width="0.1524" layer="91"/>
@@ -10876,7 +10868,7 @@ type 0207, grid 8 mm</description>
 <pinref part="J1" gate="G$1" pin="9"/>
 </segment>
 </net>
-<net name="N$16" class="0">
+<net name="OUTD13" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PF0-OSC_IN"/>
 <wire x1="106.68" y1="91.44" x2="109.22" y2="91.44" width="0.1524" layer="91"/>
@@ -10885,7 +10877,7 @@ type 0207, grid 8 mm</description>
 <wire x1="109.22" y1="93.98" x2="111.76" y2="93.98" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$17" class="0">
+<net name="OUTD14" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PF1-OSC_OUT"/>
 <wire x1="106.68" y1="88.9" x2="109.22" y2="88.9" width="0.1524" layer="91"/>
