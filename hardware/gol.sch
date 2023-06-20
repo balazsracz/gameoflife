@@ -8854,6 +8854,7 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="-6.3119" y1="2.2039" x2="-5.5499" y2="2.2039" width="0.508" layer="22" curve="-180"/>
 <text x="-3.2712" y="1.5689" size="1.27" layer="27" ratio="6">&gt;Name</text>
 <text x="-1.7288" y="1.5689" size="1.27" layer="27" ratio="6">&gt;Value</text>
+<wire x1="-6.1" y1="-1.9211" x2="6.1" y2="-1.9211" width="0.127" layer="51"/>
 </package>
 <package name="SOT-223_DIO">
 <smd name="1" x="-2.3" y="-3.025" dx="0.8508" dy="1.7612" layer="1"/>
