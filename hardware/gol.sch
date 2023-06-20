@@ -10693,20 +10693,20 @@ type 0207, grid 8 mm</description>
 </net>
 <net name="OUTB-L1" class="0">
 <segment>
-<pinref part="U1" gate="A" pin="PA8"/>
-<wire x1="45.72" y1="81.28" x2="15.24" y2="81.28" width="0.1524" layer="91"/>
 <pinref part="R4" gate="G$1" pin="2"/>
-<wire x1="15.24" y1="81.28" x2="15.24" y2="129.54" width="0.1524" layer="91"/>
+<wire x1="15.24" y1="63.5" x2="15.24" y2="129.54" width="0.1524" layer="91"/>
 <wire x1="15.24" y1="129.54" x2="33.02" y2="129.54" width="0.1524" layer="91"/>
+<pinref part="U1" gate="A" pin="PA15"/>
+<wire x1="15.24" y1="63.5" x2="45.72" y2="63.5" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="OUTB-L2" class="0">
 <segment>
-<pinref part="U1" gate="A" pin="PA15"/>
-<wire x1="45.72" y1="63.5" x2="12.7" y2="63.5" width="0.1524" layer="91"/>
 <pinref part="R5" gate="G$1" pin="2"/>
-<wire x1="12.7" y1="63.5" x2="12.7" y2="134.62" width="0.1524" layer="91"/>
+<wire x1="12.7" y1="81.28" x2="12.7" y2="134.62" width="0.1524" layer="91"/>
 <wire x1="12.7" y1="134.62" x2="33.02" y2="134.62" width="0.1524" layer="91"/>
+<pinref part="U1" gate="A" pin="PA8"/>
+<wire x1="12.7" y1="81.28" x2="45.72" y2="81.28" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="OUTB-L3" class="0">
