@@ -10316,14 +10316,14 @@ type 0207, grid 8 mm</description>
 <wire x1="68.58" y1="162.56" x2="58.42" y2="162.56" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U1" gate="A" pin="PA1"/>
-<wire x1="45.72" y1="99.06" x2="43.18" y2="99.06" width="0.1524" layer="91"/>
-<wire x1="43.18" y1="99.06" x2="43.18" y2="101.6" width="0.1524" layer="91"/>
-<pinref part="U1" gate="A" pin="PA0"/>
-<wire x1="43.18" y1="101.6" x2="45.72" y2="101.6" width="0.1524" layer="91"/>
-<wire x1="43.18" y1="101.6" x2="40.64" y2="101.6" width="0.1524" layer="91"/>
-<junction x="43.18" y="101.6"/>
-<label x="40.64" y="101.6" size="1.27" layer="95" rot="R180" xref="yes"/>
+<label x="40.64" y="33.02" size="1.27" layer="95" rot="R180" xref="yes"/>
+<pinref part="U1" gate="A" pin="PB10"/>
+<wire x1="40.64" y1="33.02" x2="43.18" y2="33.02" width="0.1524" layer="91"/>
+<pinref part="U1" gate="A" pin="PB11"/>
+<wire x1="43.18" y1="33.02" x2="45.72" y2="33.02" width="0.1524" layer="91"/>
+<wire x1="45.72" y1="30.48" x2="43.18" y2="30.48" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="30.48" x2="43.18" y2="33.02" width="0.1524" layer="91"/>
+<junction x="43.18" y="33.02"/>
 </segment>
 <segment>
 <wire x1="139.7" y1="149.86" x2="160.02" y2="149.86" width="0.1524" layer="91"/>
@@ -10338,14 +10338,14 @@ type 0207, grid 8 mm</description>
 <label x="68.58" y="147.32" size="1.27" layer="95" xref="yes"/>
 </segment>
 <segment>
-<pinref part="U1" gate="A" pin="PB11"/>
-<wire x1="45.72" y1="30.48" x2="43.18" y2="30.48" width="0.1524" layer="91"/>
-<wire x1="43.18" y1="30.48" x2="43.18" y2="33.02" width="0.1524" layer="91"/>
-<pinref part="U1" gate="A" pin="PB10"/>
-<wire x1="43.18" y1="33.02" x2="45.72" y2="33.02" width="0.1524" layer="91"/>
-<wire x1="43.18" y1="33.02" x2="40.64" y2="33.02" width="0.1524" layer="91"/>
-<junction x="43.18" y="33.02"/>
-<label x="40.64" y="33.02" size="1.27" layer="95" rot="R180" xref="yes"/>
+<label x="40.64" y="101.6" size="1.27" layer="95" rot="R180" xref="yes"/>
+<pinref part="U1" gate="A" pin="PA0"/>
+<wire x1="40.64" y1="101.6" x2="43.18" y2="101.6" width="0.1524" layer="91"/>
+<pinref part="U1" gate="A" pin="PA1"/>
+<wire x1="43.18" y1="101.6" x2="45.72" y2="101.6" width="0.1524" layer="91"/>
+<wire x1="45.72" y1="99.06" x2="43.18" y2="99.06" width="0.1524" layer="91"/>
+<wire x1="43.18" y1="99.06" x2="43.18" y2="101.6" width="0.1524" layer="91"/>
+<junction x="43.18" y="101.6"/>
 </segment>
 <segment>
 <wire x1="139.7" y1="144.78" x2="160.02" y2="144.78" width="0.1524" layer="91"/>
