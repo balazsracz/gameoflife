@@ -10666,20 +10666,20 @@ type 0207, grid 8 mm</description>
 </net>
 <net name="OUTA-L2" class="0">
 <segment>
-<pinref part="R2" gate="G$1" pin="1"/>
 <pinref part="U1" gate="A" pin="PC14-OSC32_IN"/>
-<wire x1="104.14" y1="119.38" x2="111.76" y2="119.38" width="0.1524" layer="91"/>
-<wire x1="111.76" y1="119.38" x2="111.76" y2="99.06" width="0.1524" layer="91"/>
+<wire x1="111.76" y1="124.46" x2="111.76" y2="99.06" width="0.1524" layer="91"/>
 <wire x1="111.76" y1="99.06" x2="106.68" y2="99.06" width="0.1524" layer="91"/>
+<pinref part="R3" gate="G$1" pin="1"/>
+<wire x1="111.76" y1="124.46" x2="104.14" y2="124.46" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="OUTA-L3" class="0">
 <segment>
 <pinref part="U1" gate="A" pin="PC15-OSC32_OUT"/>
 <wire x1="106.68" y1="96.52" x2="114.3" y2="96.52" width="0.1524" layer="91"/>
-<wire x1="114.3" y1="96.52" x2="114.3" y2="124.46" width="0.1524" layer="91"/>
-<wire x1="114.3" y1="124.46" x2="104.14" y2="124.46" width="0.1524" layer="91"/>
-<pinref part="R3" gate="G$1" pin="1"/>
+<wire x1="114.3" y1="96.52" x2="114.3" y2="119.38" width="0.1524" layer="91"/>
+<pinref part="R2" gate="G$1" pin="1"/>
+<wire x1="114.3" y1="119.38" x2="104.14" y2="119.38" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="OUTA-L1" class="0">
