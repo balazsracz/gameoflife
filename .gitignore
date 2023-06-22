@@ -1,0 +1,7 @@
+# temporary files from eagle
+*.b#*
+*.s#*
+*.l#*
+*.brd.lck
+*.sch.lck
+*.lbr.lck
