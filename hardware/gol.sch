@@ -9191,6 +9191,32 @@ type 0207, grid 8 mm</description>
 <rectangle x1="3.175" y1="-0.3048" x2="4.0386" y2="0.3048" layer="21"/>
 <rectangle x1="-4.0386" y1="-0.3048" x2="-3.175" y2="0.3048" layer="21"/>
 </package>
+<package name="JP4-RA-FEM" urn="urn:adsk.eagle:footprint:22259/1" locally_modified="yes" library_version="4">
+<description>&lt;b&gt;PIN HEADER&lt;/b&gt;</description>
+<wire x1="-5.08" y1="-2.06" x2="-2.54" y2="-2.06" width="0.1524" layer="21"/>
+<wire x1="-2.54" y1="-2.06" x2="-2.54" y2="6.44" width="0.1524" layer="21"/>
+<wire x1="-2.54" y1="6.44" x2="-5.08" y2="6.44" width="0.1524" layer="21"/>
+<wire x1="-5.08" y1="6.44" x2="-5.08" y2="-2.06" width="0.1524" layer="21"/>
+<wire x1="-2.54" y1="-2.06" x2="0" y2="-2.06" width="0.1524" layer="21"/>
+<wire x1="0" y1="-2.06" x2="0" y2="6.44" width="0.1524" layer="21"/>
+<wire x1="0" y1="6.44" x2="-2.54" y2="6.44" width="0.1524" layer="21"/>
+<wire x1="0" y1="-2.06" x2="2.54" y2="-2.06" width="0.1524" layer="21"/>
+<wire x1="2.54" y1="-2.06" x2="2.54" y2="6.44" width="0.1524" layer="21"/>
+<wire x1="2.54" y1="6.44" x2="0" y2="6.44" width="0.1524" layer="21"/>
+<wire x1="2.54" y1="-2.06" x2="5.08" y2="-2.06" width="0.1524" layer="21"/>
+<wire x1="5.08" y1="-2.06" x2="5.08" y2="6.44" width="0.1524" layer="21"/>
+<wire x1="5.08" y1="6.44" x2="2.54" y2="6.44" width="0.1524" layer="21"/>
+<pad name="1" x="-3.81" y="-3.81" drill="1.016" shape="long" rot="R90"/>
+<pad name="2" x="-1.27" y="-3.81" drill="1.016" shape="long" rot="R90"/>
+<pad name="3" x="1.27" y="-3.81" drill="1.016" shape="long" rot="R90"/>
+<pad name="4" x="3.81" y="-3.81" drill="1.016" shape="long" rot="R90"/>
+<text x="-5.715" y="-3.81" size="1.27" layer="25" ratio="10" rot="R90">&gt;NAME</text>
+<text x="6.985" y="-4.445" size="1.27" layer="27" rot="R90">&gt;VALUE</text>
+<rectangle x1="-4.191" y1="-2.921" x2="-3.429" y2="-2.06" layer="21"/>
+<rectangle x1="-1.651" y1="-2.921" x2="-0.889" y2="-2.06" layer="21"/>
+<rectangle x1="0.889" y1="-2.921" x2="1.651" y2="-2.06" layer="21"/>
+<rectangle x1="3.429" y1="-2.921" x2="4.191" y2="-2.06" layer="21"/>
+</package>
 </packages>
 <symbols>
 <symbol name="LED">
@@ -9442,6 +9468,17 @@ type 0207, grid 8 mm</description>
 <technology name=""/>
 </technologies>
 </device>
+<device name="1X04-RA-FEM" package="JP4-RA-FEM">
+<connects>
+<connect gate="G$1" pin="1" pad="1"/>
+<connect gate="G$1" pin="2" pad="2"/>
+<connect gate="G$1" pin="3" pad="3"/>
+<connect gate="G$1" pin="4" pad="4"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
 </devices>
 </deviceset>
 <deviceset name="R-EU-0207/8" prefix="R">
@@ -9628,7 +9665,7 @@ type 0207, grid 8 mm</description>
 <part name="R9" library="parts" deviceset="R-EU-0207/8" device=""/>
 <part name="R10" library="parts" deviceset="R-EU-0207/8" device=""/>
 <part name="SOUTH" library="pinhead" library_urn="urn:adsk.eagle:library:325" deviceset="PINHD-1X4" device="/90" package3d_urn="urn:adsk.eagle:package:22404/2" value="SOUTH"/>
-<part name="NORTH" library="pinhead" library_urn="urn:adsk.eagle:library:325" deviceset="PINHD-1X4" device="/90" package3d_urn="urn:adsk.eagle:package:22404/2" value="NORTH"/>
+<part name="NORTH" library="parts" deviceset="PINHD-1X04" device="1X04-RA-FEM" value="NORTH"/>
 <part name="GND3" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
 <part name="EAST" library="parts" deviceset="PINHD-1X04" device="" value="EAST"/>
 <part name="WEST" library="parts" deviceset="PINHD-1X04" device="" value="WEST"/>
@@ -9656,7 +9693,7 @@ type 0207, grid 8 mm</description>
 <part name="SUPPLY4" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="V+" device=""/>
 <part name="R12" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="470k"/>
 <part name="GND6" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
-<part name="BTN17" library="parts" deviceset="BUTTON-RES" device="" value="BOOT"/>
+<part name="BTN17" library="parts" deviceset="BUTTON-RES" device="" value="FLASH"/>
 <part name="SUPPLY5" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="V+" device=""/>
 <part name="BTN1" library="parts" deviceset="BUTTON-CAP" device=""/>
 <part name="BTN2" library="parts" deviceset="BUTTON-CAP" device=""/>
@@ -9780,7 +9817,7 @@ type 0207, grid 8 mm</description>
 <instance part="SOUTH" gate="A" x="48.26" y="157.48" smashed="yes" rot="MR180">
 <attribute name="NAME" x="41.91" y="149.225" size="1.778" layer="95" rot="MR180"/>
 </instance>
-<instance part="NORTH" gate="A" x="12.7" y="154.94" smashed="yes" rot="MR0">
+<instance part="NORTH" gate="G$1" x="12.7" y="154.94" smashed="yes" rot="MR0">
 <attribute name="NAME" x="11.43" y="149.225" size="1.778" layer="95" rot="MR180"/>
 </instance>
 <instance part="GND3" gate="1" x="27.94" y="147.32" smashed="yes">
@@ -10138,7 +10175,7 @@ type 0207, grid 8 mm</description>
 <junction x="228.6" y="152.4"/>
 </segment>
 <segment>
-<pinref part="NORTH" gate="A" pin="4"/>
+<pinref part="NORTH" gate="G$1" pin="4"/>
 <pinref part="SOUTH" gate="A" pin="1"/>
 <wire x1="15.24" y1="152.4" x2="27.94" y2="152.4" width="0.1524" layer="91"/>
 <pinref part="GND3" gate="1" pin="GND"/>
@@ -10216,7 +10253,7 @@ type 0207, grid 8 mm</description>
 </net>
 <net name="CAN_TR" class="0">
 <segment>
-<pinref part="NORTH" gate="A" pin="2"/>
+<pinref part="NORTH" gate="G$1" pin="2"/>
 <pinref part="SOUTH" gate="A" pin="3"/>
 <wire x1="15.24" y1="157.48" x2="30.48" y2="157.48" width="0.1524" layer="91"/>
 <wire x1="30.48" y1="157.48" x2="45.72" y2="157.48" width="0.1524" layer="91"/>
@@ -10248,7 +10285,7 @@ type 0207, grid 8 mm</description>
 </net>
 <net name="NORTH" class="0">
 <segment>
-<pinref part="NORTH" gate="A" pin="3"/>
+<pinref part="NORTH" gate="G$1" pin="3"/>
 <wire x1="15.24" y1="154.94" x2="20.32" y2="154.94" width="0.1524" layer="91"/>
 <label x="20.32" y="154.94" size="1.27" layer="95" xref="yes"/>
 </segment>
@@ -11002,7 +11039,7 @@ type 0207, grid 8 mm</description>
 <wire x1="119.38" y1="165.1" x2="119.38" y2="167.64" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="NORTH" gate="A" pin="1"/>
+<pinref part="NORTH" gate="G$1" pin="1"/>
 <pinref part="SOUTH" gate="A" pin="4"/>
 <wire x1="15.24" y1="160.02" x2="27.94" y2="160.02" width="0.1524" layer="91"/>
 <pinref part="SUPPLY7" gate="+5V" pin="+5V"/>
