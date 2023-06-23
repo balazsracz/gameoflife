@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.1" unitdist="mm" unit="mm" style="lines" multiple="1" display="yes" altdistance="5" altunitdist="mil" altunit="mil"/>
+<grid distance="50" unitdist="mil" unit="mm" style="lines" multiple="1" display="yes" altdistance="5" altunitdist="mil" altunit="mil"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
@@ -697,6 +697,20 @@ type 0207, grid 8 mm</description>
 <rectangle x1="0.889" y1="-2.921" x2="1.651" y2="-2.06" layer="21"/>
 <rectangle x1="3.429" y1="-2.921" x2="4.191" y2="-2.06" layer="21"/>
 </package>
+<package name="MOUNT-HOLE-2,8" urn="urn:adsk.eagle:footprint:14239/1" locally_modified="yes" library_version="2">
+<description>&lt;b&gt;MOUNTING HOLE&lt;/b&gt; 2.8 mm with drill center</description>
+<wire x1="-1.5" y1="0" x2="0" y2="-1.5" width="2.1" layer="51" curve="90" cap="flat"/>
+<wire x1="0" y1="1.5" x2="1.5" y2="0" width="2" layer="51" curve="-90" cap="flat"/>
+<circle x="0" y="0" radius="0.635" width="0.4572" layer="51"/>
+<circle x="0" y="0" radius="2.5" width="0.1524" layer="21"/>
+<circle x="0" y="0" radius="2.5" width="0" layer="40"/>
+<circle x="0" y="0" radius="2.5" width="0" layer="39"/>
+<circle x="0" y="0" radius="2.5" width="0" layer="41"/>
+<circle x="0" y="0" radius="2.5" width="0" layer="42"/>
+<circle x="0" y="0" radius="2.5" width="0" layer="43"/>
+<circle x="0" y="0" radius="1.5" width="0.2032" layer="21"/>
+<hole x="0" y="0" drill="2.8"/>
+</package>
 </packages>
 <packages3d>
 <package3d name="1X02" urn="urn:adsk.eagle:package:22435/2" type="model">
@@ -824,6 +838,16 @@ type 0207, grid 8 mm</description>
 <pin name="2" x="-2.54" y="2.54" visible="pad" length="short" direction="pas" function="dot"/>
 <pin name="3" x="-2.54" y="0" visible="pad" length="short" direction="pas" function="dot"/>
 <pin name="4" x="-2.54" y="-2.54" visible="pad" length="short" direction="pas" function="dot"/>
+</symbol>
+<symbol name="MOUNT-HOLE">
+<wire x1="0" y1="1.27" x2="1.27" y2="0" width="1.524" layer="94" curve="-90" cap="flat"/>
+<wire x1="-1.27" y1="0" x2="0" y2="-1.27" width="1.524" layer="94" curve="90" cap="flat"/>
+<wire x1="-0.508" y1="0" x2="0.508" y2="0" width="0.0508" layer="94"/>
+<wire x1="0" y1="0.508" x2="0" y2="-0.508" width="0.0508" layer="94"/>
+<circle x="0" y="0" radius="2.032" width="0.0508" layer="94"/>
+<circle x="0" y="0" radius="0.508" width="0.0508" layer="94"/>
+<text x="2.032" y="0.5842" size="1.778" layer="95">&gt;NAME</text>
+<text x="2.032" y="-2.4638" size="1.778" layer="96">&gt;VALUE</text>
 </symbol>
 </symbols>
 <devicesets>
@@ -1011,6 +1035,18 @@ type 0207, grid 8 mm</description>
 <connect gate="G$1" pin="3" pad="3"/>
 <connect gate="G$1" pin="4" pad="4"/>
 </connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+<deviceset name="MOUNT-HOLE" prefix="H">
+<gates>
+<gate name="G$1" symbol="MOUNT-HOLE" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="MOUNT-HOLE-2,8">
 <technologies>
 <technology name=""/>
 </technologies>
