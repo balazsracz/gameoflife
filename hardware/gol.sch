@@ -193,8 +193,8 @@ DIN A4, landscape with location and doc. field</description>
 <wire x1="3.2351" y1="-3.7211" x2="3.7211" y2="-3.7211" width="0.1524" layer="21"/>
 <wire x1="3.7211" y1="3.2351" x2="3.7211" y2="3.7211" width="0.1524" layer="21"/>
 <wire x1="-3.2351" y1="3.7211" x2="-3.7211" y2="3.7211" width="0.1524" layer="21"/>
-<wire x1="-5.2747" y1="2.75" x2="-5.4271" y2="2.75" width="0.1524" layer="21" curve="-180"/>
-<wire x1="-5.4271" y1="2.75" x2="-5.2747" y2="2.75" width="0.1524" layer="21" curve="-180"/>
+<wire x1="-5.2747" y1="2.75" x2="-5.4271" y2="2.75" width="0.1524" layer="25" curve="-180"/>
+<wire x1="-5.4271" y1="2.75" x2="-5.2747" y2="2.75" width="0.1524" layer="25" curve="-180"/>
 <wire x1="-4.25" y1="2.75" x2="-6.3709" y2="2.75" width="0.1524" layer="47"/>
 <wire x1="-4.25" y1="2.25" x2="-6.3709" y2="2.25" width="0.1524" layer="47"/>
 <wire x1="-5.9899" y1="2.75" x2="-5.9899" y2="4.02" width="0.1524" layer="47"/>
@@ -249,13 +249,13 @@ DIN A4, landscape with location and doc. field</description>
 <text x="-3.4661" y="-7.5139" size="0.635" layer="47" ratio="4">0.335in/8.5mm</text>
 <text x="-4.0424" y="-8.0854" size="0.635" layer="47" ratio="4">0.283in/7.188mm</text>
 <text x="-15.5352" y="-0.3175" size="0.635" layer="47" ratio="4">0.283in/7.188mm</text>
-<wire x1="-3.5941" y1="2.3241" x2="-2.3241" y2="3.5941" width="0.1524" layer="51"/>
-<wire x1="-3.5941" y1="-3.5941" x2="3.5941" y2="-3.5941" width="0.1524" layer="51"/>
-<wire x1="3.5941" y1="-3.5941" x2="3.5941" y2="3.5941" width="0.1524" layer="51"/>
-<wire x1="3.5941" y1="3.5941" x2="-3.5941" y2="3.5941" width="0.1524" layer="51"/>
-<wire x1="-3.5941" y1="3.5941" x2="-3.5941" y2="-3.5941" width="0.1524" layer="51"/>
-<wire x1="-2.9419" y1="2.75" x2="-3.0943" y2="2.75" width="0" layer="51" curve="-180"/>
-<wire x1="-3.0943" y1="2.75" x2="-2.9419" y2="2.75" width="0" layer="51" curve="-180"/>
+<wire x1="-3.5941" y1="2.3241" x2="-2.3241" y2="3.5941" width="0.1524" layer="21"/>
+<wire x1="-3.5941" y1="-3.5941" x2="3.5941" y2="-3.5941" width="0.1524" layer="21"/>
+<wire x1="3.5941" y1="-3.5941" x2="3.5941" y2="3.5941" width="0.1524" layer="21"/>
+<wire x1="3.5941" y1="3.5941" x2="-3.5941" y2="3.5941" width="0.1524" layer="21"/>
+<wire x1="-3.5941" y1="3.5941" x2="-3.5941" y2="-3.5941" width="0.1524" layer="21"/>
+<wire x1="-2.9419" y1="2.75" x2="-3.0943" y2="2.75" width="0" layer="21" curve="-180"/>
+<wire x1="-3.0943" y1="2.75" x2="-2.9419" y2="2.75" width="0" layer="21" curve="-180"/>
 <text x="-6.35" y="1.27" size="1.27" layer="25" ratio="6" rot="R270">&gt;Name</text>
 <text x="5.08" y="1.27" size="1.27" layer="27" ratio="6" rot="R270">&gt;Value</text>
 </package>
@@ -8729,7 +8729,6 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="4.0259" y1="13.293" x2="3.7719" y2="13.166" width="0.1524" layer="47"/>
 <wire x1="3.7719" y1="13.42" x2="3.7719" y2="13.166" width="0.1524" layer="47"/>
 <wire x1="-1.3" y1="2.2039" x2="6.9469" y2="2.2039" width="0.1524" layer="47"/>
-<wire x1="-1.3" y1="2.2039" x2="6.9469" y2="2.2039" width="0.1524" layer="47"/>
 <wire x1="6.5659" y1="2.2039" x2="6.5659" y2="3.4739" width="0.1524" layer="47"/>
 <wire x1="6.5659" y1="2.2039" x2="6.5659" y2="0.9339" width="0.1524" layer="47"/>
 <wire x1="6.5659" y1="2.2039" x2="6.4389" y2="2.4579" width="0.1524" layer="47"/>
@@ -8738,7 +8737,7 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="6.5659" y1="2.2039" x2="6.4389" y2="1.9499" width="0.1524" layer="47"/>
 <wire x1="6.5659" y1="2.2039" x2="6.6929" y2="1.9499" width="0.1524" layer="47"/>
 <wire x1="6.4389" y1="1.9499" x2="6.6929" y2="1.9499" width="0.1524" layer="47"/>
-<wire x1="0" y1="2.2039" x2="-7.2417" y2="2.2039" width="0.1524" layer="47"/>
+<wire x1="0" y1="2.2039" x2="-15.4967" y2="2.2039" width="0.1524" layer="47"/>
 <wire x1="3.1" y1="2.0789" x2="-7.2417" y2="2.0789" width="0.1524" layer="47"/>
 <wire x1="-6.8607" y1="2.2039" x2="-6.8607" y2="3.4739" width="0.1524" layer="47"/>
 <wire x1="-6.8607" y1="2.0789" x2="-6.8607" y2="0.8089" width="0.1524" layer="47"/>
@@ -8748,7 +8747,6 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="-6.8607" y1="2.0789" x2="-6.9877" y2="1.8249" width="0.1524" layer="47"/>
 <wire x1="-6.8607" y1="2.0789" x2="-6.7337" y2="1.8249" width="0.1524" layer="47"/>
 <wire x1="-6.9877" y1="1.8249" x2="-6.7337" y2="1.8249" width="0.1524" layer="47"/>
-<wire x1="0" y1="2.2039" x2="-10.4167" y2="2.2039" width="0.1524" layer="47"/>
 <wire x1="3.8" y1="-0.4711" x2="-10.4167" y2="-0.4711" width="0.1524" layer="47"/>
 <wire x1="-10.0357" y1="2.2039" x2="-10.0357" y2="3.4739" width="0.1524" layer="47"/>
 <wire x1="-10.0357" y1="-0.4711" x2="-10.0357" y2="-1.7411" width="0.1524" layer="47"/>
@@ -8758,8 +8756,6 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="-10.0357" y1="-0.4711" x2="-10.1627" y2="-0.7251" width="0.1524" layer="47"/>
 <wire x1="-10.0357" y1="-0.4711" x2="-9.9087" y2="-0.7251" width="0.1524" layer="47"/>
 <wire x1="-10.1627" y1="-0.7251" x2="-9.9087" y2="-0.7251" width="0.1524" layer="47"/>
-<wire x1="-4.0259" y1="2.6289" x2="-15.4967" y2="2.6289" width="0.1524" layer="47"/>
-<wire x1="0" y1="2.2039" x2="-15.4967" y2="2.2039" width="0.1524" layer="47"/>
 <wire x1="-15.1157" y1="2.6289" x2="-15.1157" y2="3.8989" width="0.1524" layer="47"/>
 <wire x1="-15.1157" y1="2.2039" x2="-15.1157" y2="0.9339" width="0.1524" layer="47"/>
 <wire x1="-15.1157" y1="2.6289" x2="-15.2427" y2="2.8829" width="0.1524" layer="47"/>
@@ -8768,7 +8764,7 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="-15.1157" y1="2.2039" x2="-15.2427" y2="1.9499" width="0.1524" layer="47"/>
 <wire x1="-15.1157" y1="2.2039" x2="-14.9887" y2="1.9499" width="0.1524" layer="47"/>
 <wire x1="-15.2427" y1="1.9499" x2="-14.9887" y2="1.9499" width="0.1524" layer="47"/>
-<wire x1="-4.0259" y1="2.6289" x2="-14.2267" y2="2.6289" width="0.1524" layer="47"/>
+<wire x1="-4.0259" y1="2.6289" x2="-15.4967" y2="2.6289" width="0.1524" layer="47"/>
 <wire x1="-4.0259" y1="-2.6289" x2="-14.2267" y2="-2.6289" width="0.1524" layer="47"/>
 <wire x1="-13.8457" y1="2.6289" x2="-13.8457" y2="-2.6289" width="0.1524" layer="47"/>
 <wire x1="-13.8457" y1="2.6289" x2="-13.9727" y2="2.3749" width="0.1524" layer="47"/>
@@ -8800,15 +8796,15 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="-5.5499" y1="2.2039" x2="-6.3119" y2="2.2039" width="0.508" layer="21" curve="-180"/>
 <wire x1="-6.3119" y1="2.2039" x2="-5.5499" y2="2.2039" width="0.508" layer="21" curve="-180"/>
 <wire x1="-4.0259" y1="-2.6289" x2="4.0259" y2="-2.6289" width="0.1524" layer="51"/>
-<wire x1="4.0259" y1="-2.6289" x2="4.0259" y2="2.6289" width="0.1524" layer="51"/>
-<wire x1="4.0259" y1="2.6289" x2="-4.0259" y2="2.6289" width="0.1524" layer="51"/>
-<wire x1="-4.0259" y1="2.6289" x2="-4.0259" y2="-2.6289" width="0.1524" layer="51"/>
-<wire x1="-0.919" y1="4.1089" x2="-1.681" y2="4.1089" width="0.508" layer="51" curve="-180"/>
-<wire x1="-1.681" y1="4.1089" x2="-0.919" y2="4.1089" width="0.508" layer="51" curve="-180"/>
-<wire x1="-5.5499" y1="2.2039" x2="-6.3119" y2="2.2039" width="0.508" layer="22" curve="-180"/>
-<wire x1="-6.3119" y1="2.2039" x2="-5.5499" y2="2.2039" width="0.508" layer="22" curve="-180"/>
-<text x="-3.2712" y="1.5689" size="1.27" layer="27" ratio="6">&gt;Name</text>
-<text x="-1.7288" y="1.5689" size="1.27" layer="27" ratio="6">&gt;Value</text>
+<wire x1="4.0259" y1="-2.6289" x2="4.0259" y2="2.6289" width="0.1524" layer="21"/>
+<wire x1="4.0259" y1="2.6289" x2="-4.0259" y2="2.6289" width="0.1524" layer="21"/>
+<wire x1="-4.0259" y1="2.6289" x2="-4.0259" y2="-2.6289" width="0.1524" layer="21"/>
+<wire x1="-0.919" y1="4.1089" x2="-1.681" y2="4.1089" width="0.508" layer="25" curve="-180"/>
+<wire x1="-1.681" y1="4.1089" x2="-0.919" y2="4.1089" width="0.508" layer="25" curve="-180"/>
+<wire x1="-5.5499" y1="2.2039" x2="-6.3119" y2="2.2039" width="0.508" layer="25" curve="-180"/>
+<wire x1="-6.3119" y1="2.2039" x2="-5.5499" y2="2.2039" width="0.508" layer="25" curve="-180"/>
+<text x="-5.08" y="5.08" size="1.27" layer="25" ratio="6">&gt;Name</text>
+<text x="1.27" y="5.08" size="1.27" layer="27" ratio="6">&gt;Value</text>
 <wire x1="-6.1" y1="-1.9211" x2="6.1" y2="-1.9211" width="0.127" layer="51"/>
 </package>
 <package name="SOT-223_DIO">
@@ -9019,8 +9015,8 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <wire x1="0.7523" y1="-1.902" x2="1.5477" y2="-1.902" width="0.1524" layer="21"/>
 <wire x1="3.0523" y1="-1.902" x2="3.402" y2="-1.902" width="0.1524" layer="21"/>
 <wire x1="-1.9023" y1="1.902" x2="-3.402" y2="1.902" width="0.1524" layer="21"/>
-<wire x1="-4.418" y1="-3.55" x2="-4.672" y2="-3.55" width="0.1524" layer="21" curve="-180"/>
-<wire x1="-4.672" y1="-3.55" x2="-4.418" y2="-3.55" width="0.1524" layer="21" curve="-180"/>
+<wire x1="-4.418" y1="-3.55" x2="-4.672" y2="-3.55" width="0.1524" layer="25" curve="-180"/>
+<wire x1="-4.672" y1="-3.55" x2="-4.418" y2="-3.55" width="0.1524" layer="25" curve="-180"/>
 <text x="-3.81" y="-2.54" size="1.27" layer="25" ratio="6" rot="R90">&gt;Name</text>
 <text x="5.08" y="-2.54" size="1.27" layer="27" ratio="6" rot="R90">&gt;Value</text>
 </package>
@@ -9658,7 +9654,7 @@ type 0207, grid 8 mm</description>
 <part name="D15" library="parts" deviceset="LED-5MM" device=""/>
 <part name="D16" library="parts" deviceset="LED-5MM" device=""/>
 <part name="SUPPLY4" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="V+" device=""/>
-<part name="R12" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="1M"/>
+<part name="R12" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="470k"/>
 <part name="GND6" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
 <part name="BTN17" library="parts" deviceset="BUTTON-RES" device="" value="BOOT"/>
 <part name="SUPPLY5" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="V+" device=""/>
@@ -9771,11 +9767,9 @@ type 0207, grid 8 mm</description>
 </instance>
 <instance part="R7" gate="G$1" x="127" y="93.98" smashed="yes">
 <attribute name="NAME" x="123.19" y="95.4786" size="1.778" layer="95"/>
-<attribute name="VALUE" x="123.19" y="90.678" size="1.778" layer="96"/>
 </instance>
 <instance part="R8" gate="G$1" x="127" y="86.36" smashed="yes">
 <attribute name="NAME" x="123.19" y="87.8586" size="1.778" layer="95"/>
-<attribute name="VALUE" x="123.19" y="83.058" size="1.778" layer="96"/>
 </instance>
 <instance part="R9" gate="G$1" x="17.78" y="25.4" smashed="yes">
 <attribute name="NAME" x="13.97" y="26.8986" size="1.778" layer="95"/>
