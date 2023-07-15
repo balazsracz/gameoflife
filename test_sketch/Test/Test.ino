@@ -16,10 +16,22 @@
 //#include "stm32f0xx_hal_tsc.c"
 
 
+//Serial north;
+
 static constexpr int LED13_PIN = PF0;
 static constexpr int LED14_PIN = PF1;
 
 static constexpr int MENU_PIN = PB15;
+
+static constexpr int R1_PIN = PC14;
+static constexpr int R2_PIN = PC15;
+static constexpr int R3_PIN = PC13;
+
+static constexpr int R4_PIN = PA15;
+static constexpr int R5_PIN = PB12;
+static constexpr int R6_PIN = PA8;
+
+
 
 TSC_HandleTypeDef TscHandle;
 
@@ -45,7 +57,37 @@ HardwareTimer timCharlie(BLINKER_TIMER);
 void charliehandler(void) {
   static int i = 0;
   i++;
-  digitalWrite(LED14_PIN, (i % 6) == 0 ? LOW : HIGH);
+  //return;
+  //digitalWrite(LED14_PIN, (i % 6) == 0 ? LOW : HIGH);
+  switch (i) {
+    case 1:
+      pinMode(R3_PIN, INPUT);
+      pinMode(R1_PIN, OUTPUT);
+      pinMode(R2_PIN, OUTPUT);
+      digitalWrite(R1_PIN, LOW);
+      digitalWrite(R2_PIN, HIGH);
+      pinMode(R6_PIN, INPUT);
+      pinMode(R4_PIN, OUTPUT);
+      pinMode(R5_PIN, OUTPUT);
+      digitalWrite(R4_PIN, LOW);
+      digitalWrite(R5_PIN, HIGH);
+      break;
+    case 2:
+      pinMode(R3_PIN, INPUT);
+      pinMode(R6_PIN, INPUT);
+      digitalWrite(R1_PIN, HIGH);
+      digitalWrite(R2_PIN, LOW);
+      digitalWrite(R4_PIN, LOW);
+      digitalWrite(R5_PIN, LOW);
+      break;
+    case 3:
+      pinMode(R1_PIN, INPUT);
+      pinMode(R4_PIN, INPUT);
+      break;
+
+
+    case 6: i = 0; break;
+  }
 }
 
 
@@ -114,7 +156,7 @@ void setup() {
   }
 
   /*##-2- Configure the touch-sensing IOs ####################################*/
-  IoConfig.ChannelIOs = TSC_GROUP2_IO2;// | TSC_GROUP2_IO3 | TSC_GROUP2_IO4; /* Start with the first channel */
+  IoConfig.ChannelIOs = TSC_GROUP2_IO2;  // | TSC_GROUP2_IO3 | TSC_GROUP2_IO4; /* Start with the first channel */
   IoConfig.SamplingIOs = (TSC_GROUP2_IO1);
   IoConfig.ShieldIOs = 0;
 
@@ -223,7 +265,20 @@ void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
 void loop() {
   static int i = 0;
   i++;
-  delay(1); 
+  delay(1);
+
+/*
+  pinMode(R3_PIN, INPUT);
+  pinMode(R1_PIN, OUTPUT);
+  pinMode(R2_PIN, OUTPUT);
+  digitalWrite(R1_PIN, LOW);
+  digitalWrite(R2_PIN, HIGH);
+  pinMode(R6_PIN, INPUT);
+  pinMode(R4_PIN, OUTPUT);
+  pinMode(R5_PIN, OUTPUT);
+  digitalWrite(R4_PIN, LOW);
+  digitalWrite(R5_PIN, HIGH);
+  */
 
   if (startConv) {
     static int kk = 0;
@@ -246,9 +301,11 @@ void loop() {
 
   //digitalWrite(LED14_PIN, 0);
   //digitalWrite(LED14_PIN, digitalRead(MENU_PIN));
-  if (i % 1000 < 500) {
+  if (i % 6 >= 1) {
     digitalWrite(LED13_PIN, HIGH);
+    digitalWrite(LED14_PIN, HIGH);
   } else {
     digitalWrite(LED13_PIN, LOW);
+    digitalWrite(LED14_PIN, LOW);
   }
 }
