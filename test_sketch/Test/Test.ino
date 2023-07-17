@@ -32,6 +32,22 @@ static constexpr int R5_PIN = PB12;
 static constexpr int R6_PIN = PA8;
 
 
+static constexpr int NORTH_TX_PIN = PA2;
+static constexpr int NORTH_RX_PIN = PA3;
+static constexpr int SOUTH_TX_PIN = PA9;
+static constexpr int SOUTH_RX_PIN = PA10;
+static constexpr int EAST_TX_PIN = PB10;
+static constexpr int EAST_RX_PIN = PB11;
+static constexpr int WEST_TX_PIN = PA0;
+static constexpr int WEST_RX_PIN = PA1;
+
+
+
+HardwareSerial serial_north(NORTH_RX_PIN, NORTH_TX_PIN);
+HardwareSerial serial_south(SOUTH_RX_PIN, SOUTH_TX_PIN);
+HardwareSerial serial_east(EAST_RX_PIN, EAST_TX_PIN);
+HardwareSerial serial_west(WEST_RX_PIN, WEST_TX_PIN);
+
 
 TSC_HandleTypeDef TscHandle;
 TSC_IOConfigTypeDef IoConfig;
@@ -48,6 +64,11 @@ uint32_t channel_results[2][4];
 static constexpr unsigned kChRow = 0;
 // Use this constant in the first index of channel_results[][] to see the output for columns.
 static constexpr unsigned kChCol = 1;
+
+// Stores average value over all readings of the channel. This is the sum.
+uint64_t channel_sum[2][4] = { 0 };
+// Stores average value over all readings of the channel. This is the count.
+unsigned channel_count[2][4] = { 0 };
 
 struct AcquisitionPhase {
   // Bitmask of which channel IOs to capture.
@@ -69,8 +90,8 @@ struct AcquisitionPhase {
 static constexpr unsigned kNumPhases = 3;
 static const AcquisitionPhase kPhases[kNumPhases] = {
   { TSC_GROUP2_IO2 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChCol, 0, kChRow, 1, kChCol, 2 },
-  { TSC_GROUP2_IO3 | TSC_GROUP3_IO4 | TSC_GROUP5_IO3, kChRow, 2, kChCol, 1, kChCol, 3 },
-  { TSC_GROUP2_IO4 | TSC_GROUP3_IO3 | TSC_GROUP5_IO4, kChRow, 0, kChRow, 1, kChRow, 3 }
+  { TSC_GROUP2_IO3 | TSC_GROUP3_IO4 | TSC_GROUP5_IO3, kChRow, 2, kChCol, 1, kChRow, 3 },
+  { TSC_GROUP2_IO4 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChRow, 0, kChRow, 1, kChCol, 2 }
 };
 // Which phase was last started.
 unsigned current_phase = 0;
@@ -121,7 +142,7 @@ void touch_setup() {
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
   GPIO_InitStruct.Pin = GPIO_PIN_6;  // group5 io3
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-  // B5 is incorrectly wired to a TCS circuit. B7 is a spare pin.
+  // B5 is incorrectly wired to a TSC circuit. B7 is a spare pin.
   GPIO_InitStruct.Pin = GPIO_PIN_7;  // group5 io4
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
@@ -175,6 +196,33 @@ void touch_iostart(unsigned phase) {
   //start_conv = false;
 }
 
+// Updates the calibration data structure with the more recent measurement results.
+void touch_calibrate() {
+  uint8_t results = 0;
+  for (unsigned rc : { 0, 1 }) {
+    for (unsigned num : { 0, 1, 2, 3 }) {
+      channel_sum[rc][num] += channel_results[rc][num];
+      ++channel_count[rc][num];
+    }
+  }
+}
+
+static constexpr int kDeltaThreshold = 200;
+static constexpr unsigned kRelThresholdNom = 8;
+static constexpr unsigned kRelThresholdDenom = 10;
+
+
+bool touch_eval(unsigned rc, unsigned num) {
+  unsigned ref = channel_sum[rc][num] / channel_count[rc][num];
+  unsigned actual = channel_results[rc][num];
+  if (actual < ref - kDeltaThreshold) return true;
+  if (actual < ref * kRelThresholdNom / kRelThresholdDenom) return true;
+  return false;
+}
+
+int tdeb(unsigned rc, unsigned num) {
+  return (channel_sum[rc][num] / channel_count[rc][num]) - channel_results[rc][num];
+}
 
 #define BLINKER_TIMER TIM14
 
@@ -216,7 +264,22 @@ void charliehandler(void) {
   }
 }
 
+void bus_setup() {
+  serial_north.begin(9600);
+  serial_south.begin(9600);
+  serial_east.begin(9600);
+  serial_west.begin(9600);
+  for (auto pin : { LL_GPIO_PIN_0, LL_GPIO_PIN_1, LL_GPIO_PIN_2, LL_GPIO_PIN_3, LL_GPIO_PIN_9, LL_GPIO_PIN_10 }) {
+    LL_GPIO_SetPinOutputType(GPIOA, pin, LL_GPIO_OUTPUT_OPENDRAIN);
+    LL_GPIO_SetPinPull(GPIOA, pin, LL_GPIO_PULL_UP);
+  }
+  for (auto pin : { LL_GPIO_PIN_8, LL_GPIO_PIN_9, LL_GPIO_PIN_10, LL_GPIO_PIN_11 }) {
+    LL_GPIO_SetPinOutputType(GPIOB, pin, LL_GPIO_OUTPUT_OPENDRAIN);
+    LL_GPIO_SetPinPull(GPIOB, pin, LL_GPIO_PULL_UP);
+  }
+}
 
+uint32_t next_print = 0;
 
 
 void setup() {
@@ -231,6 +294,10 @@ void setup() {
 
   touch_setup();
   start_conv = true;
+
+  next_print = HAL_GetTick() + 100;
+
+  bus_setup();
 }
 
 
@@ -267,6 +334,93 @@ void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
   start_conv = true;
 }
 
+bool d13 = true;
+bool d14 = true;
+
+void serial_test() {
+  static bool south_active = false;
+  if (touch_eval(kChRow, 0)) {
+    if (!south_active) {
+      serial_south.write(0x01);
+      SerialUSB.printf("Signaled south\n");
+      south_active = true;
+    }
+  } else {
+    south_active = false;
+  }
+  static bool west_active = false;
+  if (touch_eval(kChRow, 1)) {
+    if (!west_active) {
+      serial_west.write(0x01);
+      SerialUSB.printf("Signaled west\n");
+      west_active = true;
+    }
+  } else {
+    west_active = false;
+  }
+  static bool north_active = false;
+  if (touch_eval(kChRow, 2)) {
+    if (!north_active) {
+      serial_north.write(0x83);
+      SerialUSB.printf("Signaled north\n");
+      north_active = true;
+    }
+  } else {
+    north_active = false;
+  }
+  static bool east_active = false;
+  if (touch_eval(kChRow, 3)) {
+    if (!east_active) {
+      serial_east.write(0x83);
+      SerialUSB.printf("Signaled east\n");
+      east_active = true;
+    }
+  } else {
+    east_active = false;
+  }
+
+  // Handle input data
+  int rd = -1;
+  rd = serial_south.read();
+  if (rd >= 0) {
+    if ((rd & 0x80) == 0) {
+      SerialUSB.printf("Echo south: %02x\n", rd);
+    } else {
+      SerialUSB.printf("Rcv south: %02x\n", rd);
+      d14 = !d14;
+    }
+  }
+  rd = serial_west.read();
+  if (rd >= 0) {
+    if ((rd & 0x80) == 0) {
+      SerialUSB.printf("Echo west: %02x\n", rd);
+    } else {
+      SerialUSB.printf("Rcv west: %02x\n", rd);
+      d14 = !d14;
+    }
+  }
+  rd = serial_north.read();
+  if (rd >= 0) {
+    if ((rd & 0x80) != 0) {
+      SerialUSB.printf("Echo north: %02x\n", rd);
+    } else {
+      SerialUSB.printf("Rcv north: %02x\n", rd);
+      d13 = !d13;
+    }
+  }
+  rd = serial_east.read();
+  if (rd >= 0) {
+    if ((rd & 0x80) != 0) {
+      SerialUSB.printf("Echo east: %02x\n", rd);
+    } else {
+      SerialUSB.printf("Rcv east: %02x\n", rd);
+      d13 = !d13;
+    }
+  }
+}
+
+
+
 void loop() {
   static int i = 0;
   i++;
@@ -285,21 +439,26 @@ void loop() {
   digitalWrite(R5_PIN, HIGH);
   */
 
+  if (HAL_GetTick() >= next_print) {
+    touch_calibrate();
+    next_print = HAL_GetTick() + 100;
+    static char buf[1000];
+    static int kk = 0;
+
+    snprintf(buf, sizeof(buf), "%d: R0 %5d R1 %5d R2 %5d R3 %5d| C0 %5d C1 %5d C2 %5d C3 %5d", kk, tdeb(0, 0), tdeb(0, 1), tdeb(0, 2), tdeb(0, 3), tdeb(1, 0), tdeb(1, 1), tdeb(1, 2), tdeb(1, 3));
+    ++kk;
+    //while (Serial.availableForWrite() < strlen(buf) + 2);
+    SerialUSB.println(buf);
+
+    serial_test();
+  }
+
   if (start_conv) {
     start_conv = false;
-    if (current_phase == 0) {
-      static char buf[1000];
-      static int kk = 0;
 
-      snprintf(buf, sizeof(buf), "%d: R0 %d R1 %d R2 %d R3 %d| C0 %d C1 %d C2 %d C3 %d", kk, channel_results[0][0], channel_results[0][1], channel_results[0][2], channel_results[0][3],
-               channel_results[1][0], channel_results[1][1], channel_results[1][2], channel_results[1][3]);
-      ++kk;
-      while (Serial.availableForWrite() < strlen(buf) + 2);
-      Serial.println(buf);
-    }
     /*##-3- Discharge the touch-sensing IOs ####################################*/
     HAL_TSC_IODischarge(&TscHandle, ENABLE);
-    delay(10); /* 1 ms is more than enough to discharge all capacitors */
+    delay(1); /* 1 ms is more than enough to discharge all capacitors */
 
     touch_iostart(++current_phase);
     /*##-4- Start the acquisition process ######################################*/
@@ -315,7 +474,7 @@ void loop() {
     digitalWrite(LED13_PIN, HIGH);
     digitalWrite(LED14_PIN, HIGH);
   } else {
-    digitalWrite(LED13_PIN, LOW);
-    digitalWrite(LED14_PIN, LOW);
+    digitalWrite(LED13_PIN, d13 ? LOW : HIGH);
+    digitalWrite(LED14_PIN, d14 ? LOW : HIGH);
   }
 }
