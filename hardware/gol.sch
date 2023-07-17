@@ -8666,8 +8666,8 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 </package>
 <package name="COMB">
 <rectangle x1="-4.2" y1="-4.2" x2="4.2" y2="4.2" layer="39"/>
-<smd name="P$1" x="-3.9" y="-3.9" dx="0.1" dy="0.1" layer="1" rot="R90"/>
-<smd name="P$2" x="3.9" y="3.9" dx="0.1" dy="0.1" layer="1" rot="R90"/>
+<smd name="P$1" x="-3.9" y="-3.9" dx="0.01" dy="0.01" layer="1" rot="R90" stop="no" cream="no"/>
+<smd name="P$2" x="3.9" y="3.9" dx="0.01" dy="0.01" layer="1" rot="R90" stop="no" cream="no"/>
 <rectangle x1="-4" y1="-1.8" x2="3.6" y2="-1" layer="1"/>
 <rectangle x1="-3.6" y1="-2.8" x2="4" y2="-2" layer="1"/>
 <rectangle x1="-4" y1="-3.8" x2="3.6" y2="-3" layer="1"/>
@@ -8678,6 +8678,8 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <rectangle x1="-3.6" y1="3.2" x2="4" y2="4" layer="1"/>
 <rectangle x1="-4" y1="-4" x2="-3.8" y2="4" layer="1"/>
 <rectangle x1="3.8" y1="-4" x2="4" y2="4" layer="1"/>
+<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
+<text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
 </package>
 <package name="CONN_10118192-0002LF_AMP">
 <smd name="1" x="-1.3" y="2.2039" dx="0.4064" dy="1.3462" layer="1"/>
@@ -9231,6 +9233,23 @@ type 0207, grid 8 mm</description>
 <circle x="0" y="0" radius="1.5" width="0.2032" layer="21"/>
 <hole x="0" y="0" drill="2.8"/>
 </package>
+<package name="COMB_NARROW">
+<rectangle x1="-3.8" y1="-4.2" x2="3.9" y2="4.2" layer="39"/>
+<smd name="P$1" x="-3.5" y="-3.9" dx="0.01" dy="0.01" layer="1" rot="R90" stop="no" cream="no"/>
+<smd name="P$2" x="3.6" y="3.9" dx="0.01" dy="0.01" layer="1" rot="R90" stop="no" cream="no"/>
+<rectangle x1="-3.6" y1="-1.8" x2="3.3" y2="-1" layer="1"/>
+<rectangle x1="-3.2" y1="-2.8" x2="3.7" y2="-2" layer="1"/>
+<rectangle x1="-3.6" y1="-3.8" x2="3.3" y2="-3" layer="1"/>
+<rectangle x1="-3.2" y1="-0.8" x2="3.7" y2="0" layer="1"/>
+<rectangle x1="-3.6" y1="0.2" x2="3.3" y2="1" layer="1"/>
+<rectangle x1="-3.2" y1="1.2" x2="3.7" y2="2" layer="1"/>
+<rectangle x1="-3.6" y1="2.2" x2="3.3" y2="3" layer="1"/>
+<rectangle x1="-3.2" y1="3.2" x2="3.7" y2="4" layer="1"/>
+<rectangle x1="-3.6" y1="-4" x2="-3.4" y2="4" layer="1"/>
+<rectangle x1="3.5" y1="-4" x2="3.7" y2="4" layer="1"/>
+<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
+<text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
+</package>
 </packages>
 <symbols>
 <symbol name="LED">
@@ -9391,6 +9410,15 @@ type 0207, grid 8 mm</description>
 </gates>
 <devices>
 <device name="" package="COMB">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+<connect gate="G$1" pin="2" pad="P$2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="NARROW" package="COMB_NARROW">
 <connects>
 <connect gate="G$1" pin="1" pad="P$1"/>
 <connect gate="G$1" pin="2" pad="P$2"/>
@@ -9731,24 +9759,23 @@ type 0207, grid 8 mm</description>
 <part name="GND6" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
 <part name="BTN17" library="parts" deviceset="BUTTON-RES" device="" value="FLASH"/>
 <part name="SUPPLY5" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="V+" device=""/>
-<part name="BTN1" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN2" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN3" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN4" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN5" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN6" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN7" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN8" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN9" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN10" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN11" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN12" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN13" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN14" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN15" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN16" library="parts" deviceset="BUTTON-CAP" device=""/>
-<part name="BTN18" library="parts" deviceset="BUTTON-RES" device="" value="MENU"/>
-<part name="GND7" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
+<part name="BTN1" library="parts" deviceset="BUTTON-CAP" device="" value="1"/>
+<part name="BTN2" library="parts" deviceset="BUTTON-CAP" device="" value="2"/>
+<part name="BTN3" library="parts" deviceset="BUTTON-CAP" device="" value="3"/>
+<part name="BTN4" library="parts" deviceset="BUTTON-CAP" device="" value="4"/>
+<part name="BTN5" library="parts" deviceset="BUTTON-CAP" device="" value="5"/>
+<part name="BTN6" library="parts" deviceset="BUTTON-CAP" device="" value="6"/>
+<part name="BTN7" library="parts" deviceset="BUTTON-CAP" device="" value="7"/>
+<part name="BTN8" library="parts" deviceset="BUTTON-CAP" device="" value="8"/>
+<part name="BTN9" library="parts" deviceset="BUTTON-CAP" device="" value="9"/>
+<part name="BTN10" library="parts" deviceset="BUTTON-CAP" device="" value="10"/>
+<part name="BTN11" library="parts" deviceset="BUTTON-CAP" device="" value="11"/>
+<part name="BTN12" library="parts" deviceset="BUTTON-CAP" device="" value="12"/>
+<part name="BTN13" library="parts" deviceset="BUTTON-CAP" device="" value="13"/>
+<part name="BTN14" library="parts" deviceset="BUTTON-CAP" device="" value="14"/>
+<part name="BTN15" library="parts" deviceset="BUTTON-CAP" device="" value="15"/>
+<part name="BTN16" library="parts" deviceset="BUTTON-CAP" device="" value="16"/>
+<part name="BTN18" library="parts" deviceset="BUTTON-CAP" device="NARROW" value="MENU"/>
 <part name="R11" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="10k"/>
 <part name="R13" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="10k"/>
 <part name="R14" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="10k"/>
@@ -9999,11 +10026,8 @@ type 0207, grid 8 mm</description>
 <instance part="BTN16" gate="G$1" x="233.68" y="38.1" smashed="yes">
 <attribute name="NAME" x="236.22" y="40.64" size="1.778" layer="95"/>
 </instance>
-<instance part="BTN18" gate="G$1" x="30.48" y="10.16" smashed="yes">
-<attribute name="NAME" x="27.94" y="12.7" size="1.778" layer="95"/>
-</instance>
-<instance part="GND7" gate="1" x="7.62" y="7.62" smashed="yes">
-<attribute name="VALUE" x="5.08" y="5.08" size="1.778" layer="96"/>
+<instance part="BTN18" gate="G$1" x="251.46" y="53.34" smashed="yes" rot="R270">
+<attribute name="NAME" x="254" y="55.88" size="1.778" layer="95" rot="R270"/>
 </instance>
 <instance part="R11" gate="G$1" x="172.72" y="81.28" smashed="yes" rot="R270">
 <attribute name="NAME" x="174.2186" y="85.09" size="1.778" layer="95" rot="R270"/>
@@ -10262,11 +10286,6 @@ type 0207, grid 8 mm</description>
 <wire x1="132.08" y1="58.42" x2="132.08" y2="55.88" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="GND7" gate="1" pin="GND"/>
-<pinref part="BTN18" gate="G$1" pin="1"/>
-<wire x1="7.62" y1="10.16" x2="25.4" y2="10.16" width="0.1524" layer="91"/>
-</segment>
-<segment>
 <wire x1="139.7" y1="157.48" x2="162.56" y2="157.48" width="0.1524" layer="91"/>
 <wire x1="162.56" y1="157.48" x2="162.56" y2="137.16" width="0.1524" layer="91"/>
 <pinref part="J1" gate="G$1" pin="3"/>
@@ -10468,7 +10487,6 @@ type 0207, grid 8 mm</description>
 <wire x1="187.96" y1="63.5" x2="205.74" y2="63.5" width="0.1524" layer="91"/>
 <wire x1="205.74" y1="63.5" x2="223.52" y2="63.5" width="0.1524" layer="91"/>
 <wire x1="223.52" y1="63.5" x2="241.3" y2="63.5" width="0.1524" layer="91"/>
-<wire x1="241.3" y1="63.5" x2="246.38" y2="63.5" width="0.1524" layer="91"/>
 <wire x1="185.42" y1="68.58" x2="187.96" y2="68.58" width="0.1524" layer="91"/>
 <wire x1="187.96" y1="68.58" x2="187.96" y2="63.5" width="0.1524" layer="91"/>
 <pinref part="BTN2" gate="G$1" pin="2"/>
@@ -10486,6 +10504,9 @@ type 0207, grid 8 mm</description>
 <pinref part="R14" gate="G$1" pin="2"/>
 <wire x1="187.96" y1="63.5" x2="170.18" y2="63.5" width="0.1524" layer="91"/>
 <junction x="187.96" y="63.5"/>
+<wire x1="241.3" y1="63.5" x2="251.46" y2="63.5" width="0.1524" layer="91"/>
+<pinref part="BTN18" gate="G$1" pin="1"/>
+<wire x1="251.46" y1="63.5" x2="251.46" y2="58.42" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="IN_ROW1" class="0">
@@ -10520,7 +10541,6 @@ type 0207, grid 8 mm</description>
 <wire x1="187.96" y1="43.18" x2="205.74" y2="43.18" width="0.1524" layer="91"/>
 <wire x1="205.74" y1="43.18" x2="223.52" y2="43.18" width="0.1524" layer="91"/>
 <wire x1="223.52" y1="43.18" x2="241.3" y2="43.18" width="0.1524" layer="91"/>
-<wire x1="241.3" y1="43.18" x2="246.38" y2="43.18" width="0.1524" layer="91"/>
 <wire x1="185.42" y1="48.26" x2="187.96" y2="48.26" width="0.1524" layer="91"/>
 <wire x1="187.96" y1="48.26" x2="187.96" y2="43.18" width="0.1524" layer="91"/>
 <pinref part="BTN10" gate="G$1" pin="2"/>
@@ -10538,6 +10558,9 @@ type 0207, grid 8 mm</description>
 <pinref part="R13" gate="G$1" pin="2"/>
 <wire x1="187.96" y1="43.18" x2="170.18" y2="43.18" width="0.1524" layer="91"/>
 <junction x="187.96" y="43.18"/>
+<wire x1="241.3" y1="43.18" x2="251.46" y2="43.18" width="0.1524" layer="91"/>
+<pinref part="BTN18" gate="G$1" pin="2"/>
+<wire x1="251.46" y1="43.18" x2="251.46" y2="48.26" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="IN_ROW3" class="0">
@@ -11047,19 +11070,16 @@ type 0207, grid 8 mm</description>
 <wire x1="40.64" y1="40.64" x2="45.72" y2="40.64" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="PB15" class="0">
+<net name="DBG2" class="0">
 <segment>
 <wire x1="139.7" y1="152.4" x2="160.02" y2="152.4" width="0.1524" layer="91"/>
 <label x="142.24" y="152.654" size="1.778" layer="95"/>
 <pinref part="J1" gate="G$1" pin="5"/>
 </segment>
 <segment>
-<pinref part="BTN18" gate="G$1" pin="2"/>
-<wire x1="35.56" y1="10.16" x2="38.1" y2="10.16" width="0.1524" layer="91"/>
-<wire x1="38.1" y1="10.16" x2="38.1" y2="20.32" width="0.1524" layer="91"/>
 <pinref part="U1" gate="A" pin="PB15"/>
-<wire x1="38.1" y1="20.32" x2="45.72" y2="20.32" width="0.1524" layer="91"/>
-<label x="38.1" y="17.78" size="1.27" layer="95" xref="yes"/>
+<wire x1="43.18" y1="20.32" x2="45.72" y2="20.32" width="0.1524" layer="91"/>
+<label x="43.18" y="20.32" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="DBG1" class="0">

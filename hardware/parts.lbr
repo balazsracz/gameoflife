@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="50" unitdist="mil" unit="mm" style="lines" multiple="1" display="yes" altdistance="5" altunitdist="mil" altunit="mil"/>
+<grid distance="0.1" unitdist="mm" unit="mm" style="lines" multiple="1" display="yes" altdistance="5" altunitdist="mil" altunit="mil"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
@@ -105,8 +105,8 @@
 </package>
 <package name="COMB">
 <rectangle x1="-4.2" y1="-4.2" x2="4.2" y2="4.2" layer="39"/>
-<smd name="P$1" x="-3.9" y="-3.9" dx="0.1" dy="0.1" layer="1" rot="R90"/>
-<smd name="P$2" x="3.9" y="3.9" dx="0.1" dy="0.1" layer="1" rot="R90"/>
+<smd name="P$1" x="-3.9" y="-3.9" dx="0.01" dy="0.01" layer="1" rot="R90" stop="no" cream="no"/>
+<smd name="P$2" x="3.9" y="3.9" dx="0.01" dy="0.01" layer="1" rot="R90" stop="no" cream="no"/>
 <rectangle x1="-4" y1="-1.8" x2="3.6" y2="-1" layer="1"/>
 <rectangle x1="-3.6" y1="-2.8" x2="4" y2="-2" layer="1"/>
 <rectangle x1="-4" y1="-3.8" x2="3.6" y2="-3" layer="1"/>
@@ -117,6 +117,8 @@
 <rectangle x1="-3.6" y1="3.2" x2="4" y2="4" layer="1"/>
 <rectangle x1="-4" y1="-4" x2="-3.8" y2="4" layer="1"/>
 <rectangle x1="3.8" y1="-4" x2="4" y2="4" layer="1"/>
+<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
+<text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
 </package>
 <package name="COMB_EXPOSED">
 <rectangle x1="-3.6" y1="-3.8" x2="3.8" y2="3.8" layer="39"/>
@@ -711,6 +713,23 @@ type 0207, grid 8 mm</description>
 <circle x="0" y="0" radius="1.5" width="0.2032" layer="21"/>
 <hole x="0" y="0" drill="2.8"/>
 </package>
+<package name="COMB_NARROW">
+<rectangle x1="-3.8" y1="-4.2" x2="3.9" y2="4.2" layer="39"/>
+<smd name="P$1" x="-3.5" y="-3.9" dx="0.01" dy="0.01" layer="1" rot="R90" stop="no" cream="no"/>
+<smd name="P$2" x="3.6" y="3.9" dx="0.01" dy="0.01" layer="1" rot="R90" stop="no" cream="no"/>
+<rectangle x1="-3.6" y1="-1.8" x2="3.3" y2="-1" layer="1"/>
+<rectangle x1="-3.2" y1="-2.8" x2="3.7" y2="-2" layer="1"/>
+<rectangle x1="-3.6" y1="-3.8" x2="3.3" y2="-3" layer="1"/>
+<rectangle x1="-3.2" y1="-0.8" x2="3.7" y2="0" layer="1"/>
+<rectangle x1="-3.6" y1="0.2" x2="3.3" y2="1" layer="1"/>
+<rectangle x1="-3.2" y1="1.2" x2="3.7" y2="2" layer="1"/>
+<rectangle x1="-3.6" y1="2.2" x2="3.3" y2="3" layer="1"/>
+<rectangle x1="-3.2" y1="3.2" x2="3.7" y2="4" layer="1"/>
+<rectangle x1="-3.6" y1="-4" x2="-3.4" y2="4" layer="1"/>
+<rectangle x1="3.5" y1="-4" x2="3.7" y2="4" layer="1"/>
+<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
+<text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
+</package>
 </packages>
 <packages3d>
 <package3d name="1X02" urn="urn:adsk.eagle:package:22435/2" type="model">
@@ -873,6 +892,15 @@ type 0207, grid 8 mm</description>
 </gates>
 <devices>
 <device name="" package="COMB">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+<connect gate="G$1" pin="2" pad="P$2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="NARROW" package="COMB_NARROW">
 <connects>
 <connect gate="G$1" pin="1" pad="P$1"/>
 <connect gate="G$1" pin="2" pad="P$2"/>
