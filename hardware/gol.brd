@@ -20,7 +20,7 @@
 <layer number="24" name="bOrigins" color="15" fill="1" visible="no" active="yes"/>
 <layer number="25" name="tNames" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="26" name="bNames" color="7" fill="1" visible="no" active="yes"/>
-<layer number="27" name="tValues" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="27" name="tValues" color="7" fill="1" visible="no" active="yes"/>
 <layer number="28" name="bValues" color="7" fill="1" visible="no" active="yes"/>
 <layer number="29" name="tStop" color="7" fill="3" visible="no" active="yes"/>
 <layer number="30" name="bStop" color="7" fill="6" visible="no" active="yes"/>
@@ -110,8 +110,8 @@
 <text x="36.322" y="52.578" size="1.27" layer="25" rot="R270">GLB</text>
 <text x="37.592" y="7.874" size="1.27" layer="25" rot="R90">GLB</text>
 <text x="5.334" y="28.702" size="1.27" layer="25">GLB</text>
-<text x="61.976" y="29.718" size="1.27" layer="25" rot="R180">G</text>
-<text x="61.976" y="32.258" size="1.27" layer="25" rot="R180">L</text>
+<text x="63.6524" y="29.7434" size="1.27" layer="25" rot="R180">G</text>
+<text x="63.5254" y="32.258" size="1.27" layer="25" rot="R180">L</text>
 <text x="3.556" y="59.69" size="1.27" layer="25" rot="R270">bracz@
 2023-06-23</text>
 <rectangle x1="34.544" y1="13.462" x2="41.91" y2="46.482" layer="25"/>
@@ -2196,7 +2196,7 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="35.155" y="53.7152" size="1.27" layer="27"/>
 </element>
 <element name="EAST" library="parts" package="1X04" value="EAST" x="66.04" y="30.48" smashed="yes" rot="R90">
-<attribute name="NAME" x="62.23" y="33.02" size="1.27" layer="25" ratio="10" rot="R270"/>
+<attribute name="NAME" x="54.356" y="33.782" size="1.27" layer="25" ratio="10"/>
 <attribute name="VALUE" x="62.23" y="33.655" size="1.27" layer="27"/>
 </element>
 <element name="WEST" library="parts" package="1X04" value="WEST" x="1.27" y="30.48" smashed="yes" rot="R270">
