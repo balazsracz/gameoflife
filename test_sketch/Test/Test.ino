@@ -272,7 +272,30 @@ void charliehandler(void) {
   }
 }
 
+CAN_HandleTypeDef    CanHandle;
+
+void can_setup() {
+  __HAL_RCC_CAN1_CLK_ENABLE();
+  GPIO_InitTypeDef GPIO_InitStruct;
+  memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
+
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Alternate =  GPIO_AF4_CAN;
+
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  memset(&CanHandle, 0, sizeof(CanHandle));
+  
+}
+
+
 void bus_setup() {
+  can_setup();
   serial_north.begin(9600);
   serial_south.begin(9600);
   serial_east.begin(9600);
