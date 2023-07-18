@@ -231,7 +231,14 @@ HardwareTimer timCharlie(BLINKER_TIMER);
 void charliehandler(void) {
   static int i = 0;
   i++;
-  //return;
+  /*
+  pinMode(R6_PIN, INPUT);
+  pinMode(R4_PIN, OUTPUT);
+  pinMode(R5_PIN, OUTPUT);
+  digitalWrite(R4_PIN, LOW);
+  digitalWrite(R5_PIN, HIGH);
+  return;
+  */
   //digitalWrite(LED14_PIN, (i % 6) == 0 ? LOW : HIGH);
   switch (i) {
     case 1:
@@ -245,6 +252,7 @@ void charliehandler(void) {
       pinMode(R5_PIN, OUTPUT);
       digitalWrite(R4_PIN, LOW);
       digitalWrite(R5_PIN, HIGH);
+      i = 0;
       break;
     case 2:
       pinMode(R3_PIN, INPUT);
