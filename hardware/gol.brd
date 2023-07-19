@@ -115,7 +115,8 @@
 <text x="3.556" y="59.69" size="1.27" layer="25" rot="R270">bracz@
 2023-07-19</text>
 <rectangle x1="34.544" y1="13.462" x2="41.91" y2="46.482" layer="25"/>
-<text x="0.508" y="64.77" size="1.27" layer="25">Game of Life</text>
+<text x="7.366" y="62.992" size="1.27" layer="25" align="bottom-right">Game of
+Life</text>
 </plain>
 <libraries>
 <library name="parts">
