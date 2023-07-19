@@ -12,12 +12,6 @@
   To upload, press finger firmly on the FLASH pad, then use a metal coin two hit the RESET pad. Then click upload in the Arduino toolbar.
 */
 
-#include "stm32f0xx_hal_tsc.h"
-//#include "stm32f0xx_hal_tsc.c"
-
-
-//Serial north;
-
 static constexpr int LED13_PIN = PF0;
 static constexpr int LED14_PIN = PF1;
 
@@ -207,14 +201,16 @@ void touch_calibrate() {
   }
 }
 
+static constexpr int kMinDeltaThreshold = 50;
 static constexpr int kDeltaThreshold = 200;
 static constexpr unsigned kRelThresholdNom = 8;
 static constexpr unsigned kRelThresholdDenom = 10;
 
 
 bool touch_eval(unsigned rc, unsigned num) {
-  unsigned ref = channel_sum[rc][num] / channel_count[rc][num];
-  unsigned actual = channel_results[rc][num];
+  int ref = channel_sum[rc][num] / channel_count[rc][num];
+  int actual = channel_results[rc][num];
+  if (actual >= ref - kMinDeltaThreshold) return false;
   if (actual < ref - kDeltaThreshold) return true;
   if (actual < ref * kRelThresholdNom / kRelThresholdDenom) return true;
   return false;
@@ -272,7 +268,11 @@ void charliehandler(void) {
   }
 }
 
-CAN_HandleTypeDef    CanHandle;
+CAN_HandleTypeDef CanHandle;
+CAN_TxHeaderTypeDef TxHeader;
+CAN_RxHeaderTypeDef RxHeader;
+uint8_t TxData[8];
+uint8_t RxData[8];
 
 void can_setup() {
   __HAL_RCC_CAN1_CLK_ENABLE();
@@ -282,7 +282,7 @@ void can_setup() {
   GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Alternate =  GPIO_AF4_CAN;
+  GPIO_InitStruct.Alternate = GPIO_AF4_CAN;
 
   GPIO_InitStruct.Pin = GPIO_PIN_8;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -290,12 +290,125 @@ void can_setup() {
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   memset(&CanHandle, 0, sizeof(CanHandle));
-  
+
+  /*##-1- Configure the CAN peripheral #######################################*/
+  CanHandle.Instance = CAN;
+
+  CanHandle.Init.TimeTriggeredMode = DISABLE;
+  CanHandle.Init.AutoBusOff = DISABLE;
+  CanHandle.Init.AutoWakeUp = DISABLE;
+  CanHandle.Init.AutoRetransmission = ENABLE;
+  CanHandle.Init.ReceiveFifoLocked = DISABLE;
+  CanHandle.Init.TransmitFifoPriority = DISABLE;
+
+  /*  CanHandle.Init.TimeTriggeredMode = DISABLE;
+  CanHandle.Init.AutoBusOff = ENABLE;
+  CanHandle.Init.AutoWakeUp = ENABLE;
+  CanHandle.Init.AutoRetransmission = ENABLE;
+  CanHandle.Init.ReceiveFifoLocked = ENABLE;
+  CanHandle.Init.TransmitFifoPriority = ENABLE;*/
+  CanHandle.Init.Mode = CAN_MODE_NORMAL;
+  CanHandle.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  CanHandle.Init.TimeSeg1 = CAN_BS1_5TQ;
+  CanHandle.Init.TimeSeg2 = CAN_BS2_6TQ;
+  CanHandle.Init.Prescaler = 48;
+
+  if (HAL_CAN_Init(&CanHandle) != HAL_OK) {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /*##-2- Configure the CAN Filter ###########################################*/
+  CAN_FilterTypeDef sFilterConfig;
+  memset(&sFilterConfig, 0, sizeof(sFilterConfig));
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0x0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  sFilterConfig.FilterActivation = ENABLE;
+  sFilterConfig.SlaveStartFilterBank = 14;
+
+  if (HAL_CAN_ConfigFilter(&CanHandle, &sFilterConfig) != HAL_OK) {
+    /* Filter configuration Error */
+    Error_Handler();
+  }
+
+  /* disable sleep, enter init mode */
+  CAN->MCR = CAN_MCR_INRQ;
+
+  /* Time triggered tranmission off
+     * Bus off state is left automatically
+     * Auto-Wakeup mode disabled
+     * automatic re-transmission enabled
+     * receive FIFO not locked on overrun
+     * TX FIFO mode on
+     */
+  CAN->MCR |= (CAN_MCR_ABOM | CAN_MCR_TXFP);
+
+  /* Setup timing.
+     * 125,000 Kbps = 8 usec/bit
+     */
+  CAN->BTR = (CAN_BS1_5TQ | CAN_BS2_2TQ | CAN_SJW_1TQ | (48 - 1));
+
+  /* enter normal mode */
+  CAN->MCR &= ~CAN_MCR_INRQ;
+
+  /* Enter filter initialization mode.  Filter 0 will be used as a single
+     * 32-bit filter, ID Mask Mode, we accept everything, no mask.
+     */
+  CAN->FMR |= CAN_FMR_FINIT;
+  CAN->FM1R = 0;
+  CAN->FS1R = 0x000000001;
+  CAN->FFA1R = 0;
+  CAN->sFilterRegister[0].FR1 = 0;
+  CAN->sFilterRegister[0].FR2 = 0;
+
+  /* Activeate filter and exit initialization mode. */
+  CAN->FA1R = 0x000000001;
+  CAN->FMR &= ~CAN_FMR_FINIT;
+
+
+  /*##-3- Configure Transmission process #####################################*/
+  TxHeader.StdId = 0x321;
+  TxHeader.ExtId = 0x195b4123;
+  TxHeader.RTR = CAN_RTR_DATA;
+  TxHeader.IDE = CAN_ID_EXT;
+  TxHeader.DLC = 8;
+  TxHeader.TransmitGlobalTime = DISABLE;
+
+  TxData[0] = 0x02;
+  TxData[1] = 0x01;
+  TxData[2] = 0x0D;
+  uint32_t* puid = (uint32_t*)0x1FFFF7AC;
+  uint32_t u = puid[0] ^ puid[1] ^ puid[2];
+  memcpy(TxData + 3, &u, 4);
+  TxData[7] = 0;
 }
 
+bool send_can_frame(uint32_t suffix) {
+  TxData[7] = suffix & 0xff;
+  uint32_t mailbox;
+  int ret;
+  if ((ret = HAL_CAN_AddTxMessage(&CanHandle, &TxHeader, TxData, &mailbox)) != HAL_OK) {
+    SerialUSB.printf("can tx: error %d", ret);
+    return false;
+  }
+  return true;
+}
+
+void loop_can() {
+  if (HAL_CAN_GetRxMessage(&CanHandle, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK) {
+    uint32_t adr = 0;
+    memcpy(&adr, RxData + 3, 4);
+    SerialUSB.printf("CAN RX [%x]: %08x: 0x%02x\n", RxHeader.ExtId, adr, RxData[7]);
+  }
+}
 
 void bus_setup() {
-  can_setup();
   serial_north.begin(9600);
   serial_south.begin(9600);
   serial_east.begin(9600);
@@ -308,6 +421,7 @@ void bus_setup() {
     LL_GPIO_SetPinOutputType(GPIOB, pin, LL_GPIO_OUTPUT_OPENDRAIN);
     LL_GPIO_SetPinPull(GPIOB, pin, LL_GPIO_PULL_UP);
   }
+  can_setup();
 }
 
 uint32_t next_print = 0;
@@ -348,19 +462,19 @@ void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
   if (HAL_TSC_GroupGetStatus(&TscHandle, TSC_GROUP2_IDX) == TSC_GROUP_COMPLETED) {
     channel_results[cphase.group2_rc][cphase.group2_num] = HAL_TSC_GroupGetValue(&TscHandle, TSC_GROUP2_IDX);
   } else {
-    channel_results[cphase.group2_rc][cphase.group2_num] = 1;
+    channel_results[cphase.group2_rc][cphase.group2_num] = 0;
   }
 
   if (HAL_TSC_GroupGetStatus(&TscHandle, TSC_GROUP3_IDX) == TSC_GROUP_COMPLETED) {
     channel_results[cphase.group3_rc][cphase.group3_num] = HAL_TSC_GroupGetValue(&TscHandle, TSC_GROUP3_IDX);
   } else {
-    channel_results[cphase.group3_rc][cphase.group3_num] = 1;
+    channel_results[cphase.group3_rc][cphase.group3_num] = 0;
   }
 
   if (HAL_TSC_GroupGetStatus(&TscHandle, TSC_GROUP5_IDX) == TSC_GROUP_COMPLETED) {
     channel_results[cphase.group5_rc][cphase.group5_num] = HAL_TSC_GroupGetValue(&TscHandle, TSC_GROUP5_IDX);
   } else {
-    channel_results[cphase.group5_rc][cphase.group5_num] = 1;
+    channel_results[cphase.group5_rc][cphase.group5_num] = 0;
   }
   start_conv = true;
 }
@@ -451,12 +565,49 @@ void serial_test() {
 }
 
 
+static int last_press = -1;
+
+
+void can_send_test() {
+  int current_row = -1;
+  int current_col = -1;
+
+  int num_rows = 0;
+  int num_cols = 0;
+
+
+  for (unsigned i = 0; i <= 3; i++) {
+    if (touch_eval(kChRow, i)) {
+      ++num_rows;
+      current_row = i;
+    }
+    if (touch_eval(kChCol, i)) {
+      ++num_cols;
+      current_col = i;
+    }
+  }
+
+  //SerialUSB.printf("nr %d nc %d crow %d cc %d c3sum %ld c3curr %d\n", num_rows, num_cols, current_row, current_col, (int)channel_sum[kChCol][3], channel_results[kChCol][3]);
+  if (num_rows == 1 && num_cols == 1) {
+    int current_press = current_row * 4 + current_col;
+    if (current_press != last_press) {
+      last_press = current_press;
+      if (!send_can_frame(current_press)) {
+        SerialUSB.println("send failed.");
+      }
+      SerialUSB.printf("Button press %d\n", last_press);
+    }
+  } else {
+    last_press = -1;
+  }
+}
+
 
 void loop() {
   static int i = 0;
   i++;
   delay(1);
-
+  loop_can();
   /*
   pinMode(R3_PIN, INPUT);
   pinMode(R1_PIN, OUTPUT);
@@ -472,14 +623,18 @@ void loop() {
 
   if (HAL_GetTick() >= next_print) {
     touch_calibrate();
+    can_send_test();
     next_print = HAL_GetTick() + 100;
-    static char buf[1000];
     static int kk = 0;
 
-    snprintf(buf, sizeof(buf), "%d: R0 %5d R1 %5d R2 %5d R3 %5d| C0 %5d C1 %5d C2 %5d C3 %5d", kk, tdeb(0, 0), tdeb(0, 1), tdeb(0, 2), tdeb(0, 3), tdeb(1, 0), tdeb(1, 1), tdeb(1, 2), tdeb(1, 3));
+    //SerialUSB.printf("%d: R0 %5d R1 %5d R2 %5d R3 %5d| C0 %5d C1 %5d C2 %5d C3 %5d\n", kk, tdeb(0, 0), tdeb(0, 1), tdeb(0, 2), tdeb(0, 3), tdeb(1, 0), tdeb(1, 1), tdeb(1, 2), tdeb(1, 3));
     ++kk;
     //while (Serial.availableForWrite() < strlen(buf) + 2);
-    SerialUSB.println(buf);
+    //SerialUSB.println(buf);
+    SerialUSB.print(".");
+    if (kk % 80 == 0) {
+      SerialUSB.print("\n");
+    }
 
     serial_test();
   }
