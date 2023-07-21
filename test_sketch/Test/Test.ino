@@ -224,9 +224,54 @@ int tdeb(unsigned rc, unsigned num) {
 
 HardwareTimer timCharlie(BLINKER_TIMER);
 
+static bool leds[16];
+
+struct CharlieProgram {
+  // Which pin to set to positive voltage.
+  int pin_hi_;
+  // Which pin to set to negative voltage.
+  int pin_lo_;
+  // Which pin to set to input.
+  int pin_z_;
+  // Which led to output.
+  int led_no_;
+};
+
+const CharlieProgram pg1[6] = {
+  { R1_PIN, R2_PIN, R3_PIN, 0 },
+  { R2_PIN, R1_PIN, R3_PIN, 1 },
+  { R1_PIN, R3_PIN, R2_PIN, 2 },
+  { R3_PIN, R1_PIN, R2_PIN, 3 },
+  { R2_PIN, R3_PIN, R1_PIN, 4 },
+  { R3_PIN, R2_PIN, R1_PIN, 5 },
+};
+
+const CharlieProgram pg2[6] = {
+  { R5_PIN, R4_PIN, R6_PIN, 6 },
+  { R4_PIN, R5_PIN, R6_PIN, 7 },
+  { R6_PIN, R4_PIN, R5_PIN, 8 },
+  { R4_PIN, R6_PIN, R5_PIN, 9 },
+  { R6_PIN, R5_PIN, R4_PIN, 10 },
+  { R5_PIN, R6_PIN, R4_PIN, 11 },
+};
+
+void charlie_apply(const struct CharlieProgram* pgm, int idx) {
+  if (idx >= 6) return;
+  const auto& p = pgm[idx];
+  pinMode(p.pin_z_, INPUT);
+  pinMode(p.pin_lo_, OUTPUT);
+  digitalWrite(p.pin_lo_, LOW);  
+  pinMode(p.pin_hi_, OUTPUT);
+  digitalWrite(p.pin_hi_, leds[p.led_no_] ? HIGH : LOW);
+}
+
 void charliehandler(void) {
   static int i = 0;
   i++;
+  if (i >= 6) i = 0;
+  charlie_apply(pg1, i);
+  charlie_apply(pg2, i);
+  return;
   /*
   pinMode(R6_PIN, INPUT);
   pinMode(R4_PIN, OUTPUT);
@@ -567,6 +612,7 @@ void serial_test() {
 
 static int last_press = -1;
 
+void process_press(int btn);
 
 void can_send_test() {
   int current_row = -1;
@@ -592,6 +638,7 @@ void can_send_test() {
     int current_press = current_row * 4 + current_col;
     if (current_press != last_press) {
       last_press = current_press;
+      process_press(current_press);
       if (!send_can_frame(current_press)) {
         SerialUSB.println("send failed.");
       }
@@ -601,6 +648,22 @@ void can_send_test() {
     last_press = -1;
   }
 }
+
+void process_press(int btn) {
+  if (btn == 0) {
+    memset(leds, 1, sizeof(leds));
+  } else if (btn == 1) {
+    memset(leds, 0, sizeof(leds));
+  } else if (btn == 2) {
+    leds[6] = 1;
+    memset(leds + 7, 0, 5);
+  } else if (btn == 4) {
+    bool tmp = leds[11];
+    memmove(leds + 7, leds + 6, 5);
+    leds[6] = tmp;
+  }
+}
+
 
 
 void loop() {
