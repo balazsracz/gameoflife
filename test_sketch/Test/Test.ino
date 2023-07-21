@@ -259,8 +259,11 @@ void charlie_apply(const struct CharlieProgram* pgm, int idx) {
   if (idx >= 6) return;
   const auto& p = pgm[idx];
   pinMode(p.pin_z_, INPUT);
+  pinMode(p.pin_lo_, INPUT);
+  pinMode(p.pin_hi_, INPUT);
   pinMode(p.pin_lo_, OUTPUT);
   digitalWrite(p.pin_lo_, LOW);  
+  digitalWrite(p.pin_hi_, LOW);  
   pinMode(p.pin_hi_, OUTPUT);
   digitalWrite(p.pin_hi_, leds[p.led_no_] ? HIGH : LOW);
 }
