@@ -14,6 +14,8 @@
 
 static constexpr int LED13_PIN = PF0;
 static constexpr int LED14_PIN = PF1;
+static constexpr int LED15_PIN = PB13;
+static constexpr int LED16_PIN = PB14;
 
 static constexpr int MENU_PIN = PB15;
 
@@ -262,8 +264,8 @@ void charlie_apply(const struct CharlieProgram* pgm, int idx) {
   pinMode(p.pin_lo_, INPUT);
   pinMode(p.pin_hi_, INPUT);
   pinMode(p.pin_lo_, OUTPUT);
-  digitalWrite(p.pin_lo_, LOW);  
-  digitalWrite(p.pin_hi_, LOW);  
+  digitalWrite(p.pin_lo_, LOW);
+  digitalWrite(p.pin_hi_, LOW);
   pinMode(p.pin_hi_, OUTPUT);
   digitalWrite(p.pin_hi_, leds[p.led_no_] ? HIGH : LOW);
 }
@@ -478,11 +480,14 @@ uint32_t next_print = 0;
 void setup() {
   pinMode(LED13_PIN, OUTPUT);
   pinMode(LED14_PIN, OUTPUT);
+  pinMode(LED15_PIN, OUTPUT);
+  pinMode(LED16_PIN, OUTPUT);
+
   pinMode(MENU_PIN, INPUT_PULLUP);
 
   timCharlie.attachInterrupt(charliehandler);
   timCharlie.setMode(1, TIMER_DISABLED);
-  timCharlie.setOverflow(6000, HERTZ_FORMAT);
+  timCharlie.setOverflow(600, HERTZ_FORMAT);
   timCharlie.resume();
 
   touch_setup();
@@ -526,9 +531,6 @@ void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
   }
   start_conv = true;
 }
-
-bool d13 = true;
-bool d14 = true;
 
 void serial_test() {
   static bool south_active = false;
@@ -580,7 +582,7 @@ void serial_test() {
       SerialUSB.printf("Echo south: %02x\n", rd);
     } else {
       SerialUSB.printf("Rcv south: %02x\n", rd);
-      d14 = !d14;
+      leds[13] = !leds[13];
     }
   }
   rd = serial_west.read();
@@ -589,7 +591,7 @@ void serial_test() {
       SerialUSB.printf("Echo west: %02x\n", rd);
     } else {
       SerialUSB.printf("Rcv west: %02x\n", rd);
-      d14 = !d14;
+      leds[13] = !leds[13];
     }
   }
   rd = serial_north.read();
@@ -598,7 +600,7 @@ void serial_test() {
       SerialUSB.printf("Echo north: %02x\n", rd);
     } else {
       SerialUSB.printf("Rcv north: %02x\n", rd);
-      d13 = !d13;
+      leds[12] = !leds[12];
     }
   }
   rd = serial_east.read();
@@ -607,7 +609,7 @@ void serial_test() {
       SerialUSB.printf("Echo east: %02x\n", rd);
     } else {
       SerialUSB.printf("Rcv east: %02x\n", rd);
-      d13 = !d13;
+      leds[12] = !leds[12];
     }
   }
 }
@@ -655,6 +657,7 @@ void can_send_test() {
 void process_press(int btn) {
   if (btn == 0) {
     memset(leds, 1, sizeof(leds));
+    leds[14]=leds[15] = 0;
   } else if (btn == 1) {
     memset(leds, 0, sizeof(leds));
   } else if (btn == 2) {
@@ -674,6 +677,10 @@ void loop() {
   i++;
   delay(1);
   loop_can();
+  digitalWrite(LED13_PIN, leds[12] ? LOW : HIGH);
+  digitalWrite(LED14_PIN, leds[13] ? LOW : HIGH);
+  digitalWrite(LED15_PIN, leds[14] ? LOW : HIGH);
+  digitalWrite(LED16_PIN, leds[15] ? LOW : HIGH);
   /*
   pinMode(R3_PIN, INPUT);
   pinMode(R1_PIN, OUTPUT);
@@ -718,15 +725,5 @@ void loop() {
       /* Acquisition Error */
       Error_Handler();
     }
-  }
-
-  //digitalWrite(LED14_PIN, 0);
-  //digitalWrite(LED14_PIN, digitalRead(MENU_PIN));
-  if (i % 6 >= 1) {
-    digitalWrite(LED13_PIN, HIGH);
-    digitalWrite(LED14_PIN, HIGH);
-  } else {
-    digitalWrite(LED13_PIN, d13 ? LOW : HIGH);
-    digitalWrite(LED14_PIN, d14 ? LOW : HIGH);
   }
 }
