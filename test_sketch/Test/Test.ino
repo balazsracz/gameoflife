@@ -12,6 +12,14 @@
   To upload, press finger firmly on the FLASH pad, then use a metal coin two hit the RESET pad. Then click upload in the Arduino toolbar.
 */
 
+// #define HW_REV1
+ #define HW_REV2
+
+
+#if defined (HW_REV1) + defined(HW_REV2) != 1
+#error must define one of HW_REV1 and HW_REV2.
+#endif
+
 static constexpr int LED13_PIN = PF0;
 static constexpr int LED14_PIN = PF1;
 static constexpr int LED15_PIN = PB13;
@@ -37,6 +45,7 @@ static constexpr int EAST_RX_PIN = PB11;
 static constexpr int WEST_TX_PIN = PA0;
 static constexpr int WEST_RX_PIN = PA1;
 
+static constexpr int DBG2_PIN = PB15;
 
 
 HardwareSerial serial_north(NORTH_RX_PIN, NORTH_TX_PIN);
@@ -84,11 +93,20 @@ struct AcquisitionPhase {
 };
 
 static constexpr unsigned kNumPhases = 3;
+#if defined(HW_REV1)
 static const AcquisitionPhase kPhases[kNumPhases] = {
   { TSC_GROUP2_IO2 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChCol, 0, kChRow, 1, kChCol, 2 },
   { TSC_GROUP2_IO3 | TSC_GROUP3_IO4 | TSC_GROUP5_IO3, kChRow, 2, kChCol, 1, kChRow, 3 },
   { TSC_GROUP2_IO4 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChRow, 0, kChRow, 1, kChCol, 2 }
 };
+#elif defined (HW_REV2)
+static const AcquisitionPhase kPhases[kNumPhases] = {
+  { TSC_GROUP2_IO2 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChCol, 0, kChRow, 1, kChCol, 2 },
+  { TSC_GROUP2_IO3 | TSC_GROUP3_IO4 | TSC_GROUP5_IO3, kChRow, 2, kChCol, 1, kChCol, 3 },
+  { TSC_GROUP2_IO4 | TSC_GROUP3_IO3 | TSC_GROUP5_IO4, kChRow, 0, kChRow, 1, kChRow, 3 }
+};
+#endif
+
 // Which phase was last started.
 unsigned current_phase = 0;
 
