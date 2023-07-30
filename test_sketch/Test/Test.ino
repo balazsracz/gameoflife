@@ -22,10 +22,12 @@
 
 static constexpr int LED13_PIN = PF0;
 static constexpr int LED14_PIN = PF1;
+#ifdef HW_REV1
 static constexpr int LED15_PIN = PB13;
 static constexpr int LED16_PIN = PB14;
 
 static constexpr int MENU_PIN = PB15;
+#endif
 
 static constexpr int R1_PIN = PC14;
 static constexpr int R2_PIN = PC15;
@@ -35,6 +37,10 @@ static constexpr int R4_PIN = PA15;
 static constexpr int R5_PIN = PB12;
 static constexpr int R6_PIN = PA8;
 
+#ifdef HW_REV2
+static constexpr int R15_PIN = PB13;
+static constexpr int R16_PIN = PB14;
+#endif
 
 static constexpr int NORTH_TX_PIN = PA2;
 static constexpr int NORTH_RX_PIN = PA3;
@@ -244,7 +250,7 @@ int tdeb(unsigned rc, unsigned num) {
 
 HardwareTimer timCharlie(BLINKER_TIMER);
 
-static bool leds[16];
+static bool leds[17];
 
 struct CharlieProgram {
   // Which pin to set to positive voltage.
@@ -275,6 +281,16 @@ const CharlieProgram pg2[6] = {
   { R5_PIN, R6_PIN, R4_PIN, 11 },
 };
 
+const CharlieProgram pg3[6] = {
+  { R15_PIN, R16_PIN, DBG2_PIN, 14 },
+  { R16_PIN, R15_PIN, DBG2_PIN, 15 },
+  { DBG2_PIN, R16_PIN, R15_PIN, 16 },
+  { DBG2_PIN, DBG2_PIN, R16_PIN, 16 },
+  { DBG2_PIN, DBG2_PIN, DBG2_PIN, 16 },
+  { DBG2_PIN, DBG2_PIN, DBG2_PIN, 16 },
+};
+
+
 void charlie_apply(const struct CharlieProgram* pgm, int idx) {
   if (idx >= 6) return;
   const auto& p = pgm[idx];
@@ -294,6 +310,7 @@ void charliehandler(void) {
   if (i >= 6) i = 0;
   charlie_apply(pg1, i);
   charlie_apply(pg2, i);
+  charlie_apply(pg3, i);
   return;
   /*
   pinMode(R6_PIN, INPUT);
@@ -498,10 +515,12 @@ uint32_t next_print = 0;
 void setup() {
   pinMode(LED13_PIN, OUTPUT);
   pinMode(LED14_PIN, OUTPUT);
+#ifdef HW_REV1  
   pinMode(LED15_PIN, OUTPUT);
   pinMode(LED16_PIN, OUTPUT);
 
   pinMode(MENU_PIN, INPUT_PULLUP);
+#endif
 
   timCharlie.attachInterrupt(charliehandler);
   timCharlie.setMode(1, TIMER_DISABLED);
@@ -691,14 +710,17 @@ void process_press(int btn) {
 
 
 void loop() {
+  leds[16] = 0;
   static int i = 0;
   i++;
   delay(1);
   loop_can();
   digitalWrite(LED13_PIN, leds[12] ? LOW : HIGH);
   digitalWrite(LED14_PIN, leds[13] ? LOW : HIGH);
+#ifdef HW_REV1  
   digitalWrite(LED15_PIN, leds[14] ? LOW : HIGH);
   digitalWrite(LED16_PIN, leds[15] ? LOW : HIGH);
+#endif  
   /*
   pinMode(R3_PIN, INPUT);
   pinMode(R1_PIN, OUTPUT);
