@@ -13,16 +13,17 @@
 */
 
 // #define HW_REV1
- #define HW_REV2
+#define HW_REV2
 
 
-#if defined (HW_REV1) + defined(HW_REV2) != 1
+#if defined(HW_REV1) + defined(HW_REV2) != 1
 #error must define one of HW_REV1 and HW_REV2.
 #endif
 
 static constexpr int LED13_PIN = PF0;
 static constexpr int LED14_PIN = PF1;
-#ifdef HW_REV1
+//#ifdef HW_REV1
+#if 1
 static constexpr int LED15_PIN = PB13;
 static constexpr int LED16_PIN = PB14;
 
@@ -52,6 +53,7 @@ static constexpr int WEST_TX_PIN = PA0;
 static constexpr int WEST_RX_PIN = PA1;
 
 static constexpr int DBG2_PIN = PB15;
+static constexpr int DBG1_PIN = PB5;
 
 
 HardwareSerial serial_north(NORTH_RX_PIN, NORTH_TX_PIN);
@@ -105,7 +107,7 @@ static const AcquisitionPhase kPhases[kNumPhases] = {
   { TSC_GROUP2_IO3 | TSC_GROUP3_IO4 | TSC_GROUP5_IO3, kChRow, 2, kChCol, 1, kChRow, 3 },
   { TSC_GROUP2_IO4 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChRow, 0, kChRow, 1, kChCol, 2 }
 };
-#elif defined (HW_REV2)
+#elif defined(HW_REV2)
 static const AcquisitionPhase kPhases[kNumPhases] = {
   { TSC_GROUP2_IO2 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChCol, 0, kChRow, 1, kChCol, 2 },
   { TSC_GROUP2_IO3 | TSC_GROUP3_IO4 | TSC_GROUP5_IO3, kChRow, 2, kChCol, 1, kChCol, 3 },
@@ -229,8 +231,8 @@ void touch_calibrate() {
 
 static constexpr int kMinDeltaThreshold = 50;
 static constexpr int kDeltaThreshold = 200;
-static constexpr unsigned kRelThresholdNom = 8;
-static constexpr unsigned kRelThresholdDenom = 10;
+static constexpr unsigned kRelThresholdNom = 85;
+static constexpr unsigned kRelThresholdDenom = 100;
 
 
 bool touch_eval(unsigned rc, unsigned num) {
@@ -238,12 +240,13 @@ bool touch_eval(unsigned rc, unsigned num) {
   int actual = channel_results[rc][num];
   if (actual >= ref - kMinDeltaThreshold) return false;
   if (actual < ref - kDeltaThreshold) return true;
-  if (actual < ref * kRelThresholdNom / kRelThresholdDenom) return true;
+  if (actual < (ref * kRelThresholdNom / kRelThresholdDenom)) return true;
   return false;
 }
 
 int tdeb(unsigned rc, unsigned num) {
-  return (channel_sum[rc][num] / channel_count[rc][num]) - channel_results[rc][num];
+  return channel_results[rc][num];
+  //return (channel_sum[rc][num] / channel_count[rc][num]) - channel_results[rc][num];
 }
 
 #define BLINKER_TIMER TIM14
@@ -282,12 +285,12 @@ const CharlieProgram pg2[6] = {
 };
 
 const CharlieProgram pg3[6] = {
-  { R15_PIN, R16_PIN, DBG2_PIN, 14 },
-  { R16_PIN, R15_PIN, DBG2_PIN, 15 },
-  { DBG2_PIN, R16_PIN, R15_PIN, 16 },
-  { DBG2_PIN, DBG2_PIN, R16_PIN, 16 },
-  { DBG2_PIN, DBG2_PIN, DBG2_PIN, 16 },
-  { DBG2_PIN, DBG2_PIN, DBG2_PIN, 16 },
+  { R16_PIN, R15_PIN, DBG1_PIN, 14 },
+  { R15_PIN, R16_PIN, DBG1_PIN, 15 },
+  { DBG1_PIN, R16_PIN, R15_PIN, 16 },
+  { DBG1_PIN, DBG1_PIN, R16_PIN, 16 },
+  { DBG1_PIN, DBG1_PIN, DBG1_PIN, 16 },
+  { DBG1_PIN, DBG1_PIN, DBG1_PIN, 16 },
 };
 
 
@@ -515,11 +518,13 @@ uint32_t next_print = 0;
 void setup() {
   pinMode(LED13_PIN, OUTPUT);
   pinMode(LED14_PIN, OUTPUT);
-#ifdef HW_REV1  
-  pinMode(LED15_PIN, OUTPUT);
-  pinMode(LED16_PIN, OUTPUT);
+//#ifdef HW_REV1
+#if 1
+  //  pinMode(LED15_PIN, OUTPUT);
+  //  pinMode(LED16_PIN, OUTPUT);
 
-  pinMode(MENU_PIN, INPUT_PULLUP);
+  pinMode(DBG1_PIN, INPUT);
+
 #endif
 
   timCharlie.attachInterrupt(charliehandler);
@@ -694,7 +699,7 @@ void can_send_test() {
 void process_press(int btn) {
   if (btn == 0) {
     memset(leds, 1, sizeof(leds));
-    leds[14]=leds[15] = 0;
+    //leds[14] = leds[15] = 0;
   } else if (btn == 1) {
     memset(leds, 0, sizeof(leds));
   } else if (btn == 2) {
@@ -704,6 +709,8 @@ void process_press(int btn) {
     bool tmp = leds[11];
     memmove(leds + 7, leds + 6, 5);
     leds[6] = tmp;
+  } else {
+    leds[btn] ^= 1;
   }
 }
 
@@ -717,10 +724,10 @@ void loop() {
   loop_can();
   digitalWrite(LED13_PIN, leds[12] ? LOW : HIGH);
   digitalWrite(LED14_PIN, leds[13] ? LOW : HIGH);
-#ifdef HW_REV1  
+#ifdef HW_REV1
   digitalWrite(LED15_PIN, leds[14] ? LOW : HIGH);
   digitalWrite(LED16_PIN, leds[15] ? LOW : HIGH);
-#endif  
+#endif
   /*
   pinMode(R3_PIN, INPUT);
   pinMode(R1_PIN, OUTPUT);
