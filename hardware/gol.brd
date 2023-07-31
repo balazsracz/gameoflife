@@ -110,8 +110,8 @@
 <text x="36.322" y="52.578" size="1.27" layer="25" rot="R270">GLB</text>
 <text x="37.592" y="7.874" size="1.27" layer="25" rot="R90">GLB</text>
 <text x="5.334" y="28.702" size="1.27" layer="25">GLB</text>
-<text x="63.6524" y="29.7434" size="1.27" layer="25" rot="R180">G</text>
-<text x="63.5254" y="32.258" size="1.27" layer="25" rot="R180">L</text>
+<text x="63.3984" y="29.7434" size="1.27" layer="25" rot="R180">G</text>
+<text x="63.2714" y="32.258" size="1.27" layer="25" rot="R180">L</text>
 <text x="3.556" y="59.69" size="1.27" layer="25" rot="R270">bracz@
 2023-07-19</text>
 <rectangle x1="34.544" y1="13.462" x2="41.91" y2="46.482" layer="25"/>
@@ -135,8 +135,8 @@ Life</text>
 <rectangle x1="-3.6" y1="3.2" x2="4" y2="4" layer="1"/>
 <rectangle x1="-4" y1="-4" x2="-3.8" y2="4" layer="1"/>
 <rectangle x1="3.8" y1="-4" x2="4" y2="4" layer="1"/>
-<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
-<text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
+<circle x="0" y="0" radius="3.5" width="0.1" layer="25"/>
+<text x="0" y="0" size="3" layer="25" font="vector" ratio="4" align="center">&gt;VALUE</text>
 </package>
 <package name="COMB_NARROW">
 <rectangle x1="-3.8" y1="-4.2" x2="3.9" y2="4.2" layer="39"/>
@@ -152,7 +152,7 @@ Life</text>
 <rectangle x1="-3.2" y1="3.2" x2="3.7" y2="4" layer="1"/>
 <rectangle x1="-3.6" y1="-4" x2="-3.4" y2="4" layer="1"/>
 <rectangle x1="3.5" y1="-4" x2="3.7" y2="4" layer="1"/>
-<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
+<circle x="0" y="0" radius="3.5" width="0.1" layer="25"/>
 <text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
 </package>
 <package name="COMB_EXPOSED">
@@ -2025,58 +2025,58 @@ design rules under a new name.</description>
 </autorouter>
 <elements>
 <element name="BTN1" library="parts" package="COMB" value="1" x="12.73" y="62.492" smashed="yes">
-<attribute name="VALUE" x="12.73" y="62.492" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="12.73" y="62.492" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN10" library="parts" package="COMB" value="10" x="29.73" y="29" smashed="yes">
-<attribute name="VALUE" x="29.73" y="29" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="29.73" y="29" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN11" library="parts" package="COMB" value="11" x="46.73" y="29" smashed="yes">
-<attribute name="VALUE" x="46.73" y="29" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="46.73" y="29" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN12" library="parts" package="COMB" value="12" x="57.92" y="29" smashed="yes">
-<attribute name="VALUE" x="57.92" y="29" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="57.92" y="29" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN13" library="parts" package="COMB" value="13" x="12.73" y="12" smashed="yes">
-<attribute name="VALUE" x="12.73" y="12" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="12.73" y="12" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN14" library="parts" package="COMB" value="14" x="29.73" y="12" smashed="yes">
-<attribute name="VALUE" x="29.73" y="12" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="29.73" y="12" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN15" library="parts" package="COMB" value="15" x="46.73" y="12" smashed="yes">
-<attribute name="VALUE" x="46.73" y="12" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="46.73" y="12" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN16" library="parts" package="COMB" value="16" x="61.73" y="12" smashed="yes">
-<attribute name="VALUE" x="61.73" y="12" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="61.73" y="12" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN17" library="parts" package="COMB_EXPOSED" value="FLASH" x="4.064" y="20.574" smashed="yes">
 <attribute name="VALUE" x="0.762" y="15.24" size="1.27" layer="21"/>
 </element>
 <element name="BTN18" library="parts" package="COMB_NARROW" value="MENU" x="4.32" y="42.586" smashed="yes" rot="R180">
-<attribute name="VALUE" x="4.318" y="42.5704" size="1.27" layer="21" align="center"/>
+<attribute name="VALUE" x="4.318" y="42.5704" size="1.27" layer="21" font="vector" align="center"/>
 </element>
 <element name="BTN2" library="parts" package="COMB" value="2" x="28.73" y="62.492" smashed="yes">
-<attribute name="VALUE" x="28.73" y="62.492" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="28.73" y="62.492" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN3" library="parts" package="COMB" value="3" x="47.73" y="62.492" smashed="yes">
-<attribute name="VALUE" x="47.73" y="62.492" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="47.73" y="62.492" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN4" library="parts" package="COMB" value="4" x="61.73" y="62.492" smashed="yes">
-<attribute name="VALUE" x="61.73" y="62.492" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="61.73" y="62.492" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN5" library="parts" package="COMB" value="5" x="12.73" y="46" smashed="yes">
-<attribute name="VALUE" x="12.73" y="46" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="12.73" y="46" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN6" library="parts" package="COMB" value="6" x="29.73" y="46" smashed="yes">
-<attribute name="VALUE" x="29.73" y="46" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="29.73" y="46" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN7" library="parts" package="COMB" value="7" x="46.73" y="46" smashed="yes">
-<attribute name="VALUE" x="46.73" y="46" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="46.73" y="46" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN8" library="parts" package="COMB" value="8" x="61.73" y="46" smashed="yes">
-<attribute name="VALUE" x="61.73" y="46" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="61.73" y="46" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="BTN9" library="parts" package="COMB" value="9" x="12.73" y="29" smashed="yes">
-<attribute name="VALUE" x="12.73" y="29" size="3" layer="25" align="center"/>
+<attribute name="VALUE" x="12.73" y="29" size="3" layer="25" font="vector" ratio="4" align="center"/>
 </element>
 <element name="C1" library="rcl" library_urn="urn:adsk.eagle:library:334" package="C0603" package3d_urn="urn:adsk.eagle:package:23616/2" value="1 uF" x="29.21" y="26.67" smashed="yes" rot="MR0">
 <attribute name="NAME" x="30.734" y="27.305" size="1.27" layer="26" rot="MR180"/>
@@ -2210,7 +2210,7 @@ design rules under a new name.</description>
 <attribute name="SPICEPREFIX" value="R" x="-34.29" y="-70.104" size="1.778" layer="28" rot="MR0" display="off"/>
 <attribute name="VALUE" x="13.335" y="30.861" size="1.27" layer="28" rot="MR0"/>
 </element>
-<element name="R12" library="rcl" library_urn="urn:adsk.eagle:library:334" package="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="470k" x="4.318" y="17.272" smashed="yes" rot="MR90">
+<element name="R12" library="rcl" library_urn="urn:adsk.eagle:library:334" package="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="1M" x="4.318" y="17.272" smashed="yes" rot="MR90">
 <attribute name="NAME" x="5.969" y="19.05" size="1.27" layer="26" rot="MR0"/>
 <attribute name="POPULARITY" value="70" x="-90.932" y="113.792" size="1.778" layer="28" rot="MR90" display="off"/>
 <attribute name="SPICEPREFIX" value="R" x="-90.932" y="113.792" size="1.778" layer="28" rot="MR90" display="off"/>

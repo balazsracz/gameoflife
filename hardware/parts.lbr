@@ -117,8 +117,8 @@
 <rectangle x1="-3.6" y1="3.2" x2="4" y2="4" layer="1"/>
 <rectangle x1="-4" y1="-4" x2="-3.8" y2="4" layer="1"/>
 <rectangle x1="3.8" y1="-4" x2="4" y2="4" layer="1"/>
-<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
-<text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
+<circle x="0" y="0" radius="3.5" width="0.1" layer="25"/>
+<text x="0" y="0" size="3" layer="25" font="vector" ratio="4" align="center">&gt;VALUE</text>
 </package>
 <package name="COMB_EXPOSED">
 <rectangle x1="-3.6" y1="-3.8" x2="3.8" y2="3.8" layer="39"/>
@@ -727,7 +727,7 @@ type 0207, grid 8 mm</description>
 <rectangle x1="-3.2" y1="3.2" x2="3.7" y2="4" layer="1"/>
 <rectangle x1="-3.6" y1="-4" x2="-3.4" y2="4" layer="1"/>
 <rectangle x1="3.5" y1="-4" x2="3.7" y2="4" layer="1"/>
-<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
+<circle x="0" y="0" radius="3.5" width="0.1" layer="25"/>
 <text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
 </package>
 </packages>

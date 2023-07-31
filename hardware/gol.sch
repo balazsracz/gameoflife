@@ -8678,8 +8678,8 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 <rectangle x1="-3.6" y1="3.2" x2="4" y2="4" layer="1"/>
 <rectangle x1="-4" y1="-4" x2="-3.8" y2="4" layer="1"/>
 <rectangle x1="3.8" y1="-4" x2="4" y2="4" layer="1"/>
-<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
-<text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
+<circle x="0" y="0" radius="3.5" width="0.1" layer="25"/>
+<text x="0" y="0" size="3" layer="25" font="vector" ratio="4" align="center">&gt;VALUE</text>
 </package>
 <package name="CONN_10118192-0002LF_AMP">
 <smd name="1" x="-1.3" y="2.2039" dx="0.4064" dy="1.3462" layer="1"/>
@@ -9247,7 +9247,7 @@ type 0207, grid 8 mm</description>
 <rectangle x1="-3.2" y1="3.2" x2="3.7" y2="4" layer="1"/>
 <rectangle x1="-3.6" y1="-4" x2="-3.4" y2="4" layer="1"/>
 <rectangle x1="3.5" y1="-4" x2="3.7" y2="4" layer="1"/>
-<circle x="0" y="0" radius="3.5" width="0.3" layer="25"/>
+<circle x="0" y="0" radius="3.5" width="0.1" layer="25"/>
 <text x="0" y="0" size="3" layer="25" align="center">&gt;VALUE</text>
 </package>
 </packages>
@@ -9746,7 +9746,7 @@ type 0207, grid 8 mm</description>
 <part name="D14" library="parts" deviceset="LED-5MM" device=""/>
 <part name="D15" library="parts" deviceset="LED-5MM" device=""/>
 <part name="D16" library="parts" deviceset="LED-5MM" device=""/>
-<part name="R12" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="470k"/>
+<part name="R12" library="rcl" library_urn="urn:adsk.eagle:library:334" deviceset="R-EU_" device="R0603" package3d_urn="urn:adsk.eagle:package:23555/3" value="1M"/>
 <part name="GND6" library="supply1" library_urn="urn:adsk.eagle:library:371" deviceset="GND" device=""/>
 <part name="BTN17" library="parts" deviceset="BUTTON-RES" device="" value="FLASH"/>
 <part name="SUPPLY5" library="supply2" library_urn="urn:adsk.eagle:library:372" deviceset="V+" device=""/>
