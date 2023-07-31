@@ -8649,8 +8649,8 @@ Source: http://www.mouser.com/ds/2/392/products_18-2245.pdf</description>
 </package>
 <package name="COMB_EXPOSED">
 <rectangle x1="-3.6" y1="-3.8" x2="3.8" y2="3.8" layer="39"/>
-<smd name="P$1" x="-3.3" y="-3.5" dx="0.1" dy="0.1" layer="1" rot="R90"/>
-<smd name="P$2" x="3.5" y="3.5" dx="0.1" dy="0.1" layer="1" rot="R90"/>
+<smd name="P$1" x="-3.3" y="-3.5" dx="0.1" dy="0.1" layer="1" rot="R90" stop="no" cream="no"/>
+<smd name="P$2" x="3.5" y="3.5" dx="0.1" dy="0.1" layer="1" rot="R90" stop="no" cream="no"/>
 <rectangle x1="-3.4" y1="-1.4" x2="3.2" y2="-0.6" layer="1"/>
 <rectangle x1="-3" y1="-2.4" x2="3.6" y2="-1.6" layer="1"/>
 <rectangle x1="-3.4" y1="-3.4" x2="3.2" y2="-2.6" layer="1"/>
