@@ -1,3 +1,4 @@
+#include "stm32f0xx_hal.h"
 
 
 
@@ -20,6 +21,15 @@ static constexpr unsigned kChCol = 1;
 uint64_t channel_sum[2][4] = { 0 };
 // Stores average value over all readings of the channel. This is the count.
 unsigned channel_count[2][4] = { 0 };
+
+// We use the first this many ticks after boot for calibration purposes.
+static constexpr uint32_t kCalibrateTickCount = 1000;
+
+// Output variables for row 0..3 to be used by the application. True: active (pressed), false: inactive (not pressed).
+bool btn_row_active[4];
+// Output variables for column 0..3 to be used by the application.
+bool btn_col_active[4];
+
 
 struct AcquisitionPhase {
   // Bitmask of which channel IOs to capture.
@@ -45,7 +55,7 @@ static const AcquisitionPhase kPhases[kNumPhases] = {
   { TSC_GROUP2_IO3 | TSC_GROUP3_IO4 | TSC_GROUP5_IO3, kChRow, 2, kChCol, 1, kChRow, 3 },
   { TSC_GROUP2_IO4 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChRow, 0, kChRow, 1, kChCol, 2 }
 };
-#elif defined(HW_REV2)
+#else
 static const AcquisitionPhase kPhases[kNumPhases] = {
   { TSC_GROUP2_IO2 | TSC_GROUP3_IO3 | TSC_GROUP5_IO2, kChCol, 0, kChRow, 1, kChCol, 2 },
   { TSC_GROUP2_IO3 | TSC_GROUP3_IO4 | TSC_GROUP5_IO3, kChRow, 2, kChCol, 1, kChCol, 3 },
@@ -55,6 +65,7 @@ static const AcquisitionPhase kPhases[kNumPhases] = {
 
 // Which phase was last started.
 unsigned current_phase = 0;
+uint32_t next_conv_tick = 0;
 
 extern "C" {
   void TSC_IRQHandler(void) {
@@ -62,7 +73,7 @@ extern "C" {
   }
 }
 
-void touch_setup() {
+void TouchSetup() {
   __HAL_RCC_TSC_CLK_ENABLE();
   GPIO_InitTypeDef GPIO_InitStruct;
 
@@ -139,7 +150,7 @@ void touch_setup() {
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
-void touch_iostart(unsigned phase) {
+void TouchIoStart(unsigned phase) {
   if (phase >= kNumPhases) {
     phase = 0;
   }
@@ -152,12 +163,10 @@ void touch_iostart(unsigned phase) {
     /* Initialization Error */
     Error_Handler();
   }
-  current_phase = phase;
-  //start_conv = false;
 }
 
 // Updates the calibration data structure with the more recent measurement results.
-void touch_calibrate() {
+void TouchCalibrate() {
   uint8_t results = 0;
   for (unsigned rc : { 0, 1 }) {
     for (unsigned num : { 0, 1, 2, 3 }) {
@@ -176,7 +185,7 @@ static constexpr unsigned kRelThresholdDenom = 100;
 /// @param rc is kChRow or kChCol
 /// @param num is 0..3
 /// @return true if this channel is active (finger is on it).
-bool touch_eval(unsigned rc, unsigned num) {
+bool TouchEval(unsigned rc, unsigned num) {
   int ref = channel_sum[rc][num] / channel_count[rc][num];
   int actual = channel_results[rc][num];
   if (actual >= ref - kMinDeltaThreshold) return false;
@@ -224,6 +233,32 @@ void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
   } else {
     channel_results[cphase.group5_rc][cphase.group5_num] = 0;
   }
-  start_conv = true;
+
+  next_conv_tick = HAL_GetTick() + 2;
 }
 
+// Call this function from the loop().
+void TouchLoop() {
+  if (HAL_GetTick() >= next_conv_tick) {
+    next_conv_tick = -1;
+    if (current_phase >= kNumPhases) {
+      if (HAL_GetTick() < kCalibrateTickCount) {
+        // Records this data for calibration purposes.
+        TouchCalibrate();
+      } else {
+        // Evaluates the measured data against the stored calibration.
+        for (unsigned i = 0; i < 4; ++i) {
+          btn_row_active[i] = TouchEval(kChRow, i);
+          btn_col_active[i] = TouchEval(kChCol, i);
+        }
+      }
+      current_phase = 0;
+    }
+    // Collect next sample.
+    TouchIoStart(current_phase);
+    if (HAL_TSC_Start_IT(&TscHandle) != HAL_OK) {
+      /* Acquisition Error */
+      Error_Handler();
+    }
+  }
+}
