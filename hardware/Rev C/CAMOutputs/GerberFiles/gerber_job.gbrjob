@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2023-07-31T10:46:38Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.6.2"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "gol"
+        },
+        "Owner": "Balazs Racz <balazs.racz+ade@gmail.com>",
+        "Size": {
+            "X": 67.31,
+            "Y": 67.31
+        }
+    }
+}
