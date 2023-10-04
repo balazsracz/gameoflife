@@ -30,6 +30,7 @@ bool btn_row_active[4];
 // Output variables for column 0..3 to be used by the application.
 bool btn_col_active[4];
 
+unsigned conv_count = 0;
 
 struct AcquisitionPhase {
   // Bitmask of which channel IOs to capture.
@@ -148,6 +149,10 @@ void TouchSetup() {
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Pin = GPIO_PIN_5;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+
+  HAL_TSC_IODischarge(&TscHandle, ENABLE);
+  next_conv_tick = HAL_GetTick() + 2;
 }
 
 void TouchIoStart(unsigned phase) {
@@ -209,7 +214,7 @@ int tdeb(unsigned rc, unsigned num) {
   *         the configuration information for the specified TSC.
   * @retval None
   */
-void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
+extern "C" void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
   const AcquisitionPhase& cphase = kPhases[current_phase];
   /*##-5- Discharge the touch-sensing IOs ####################################*/
   HAL_TSC_IODischarge(&TscHandle, ENABLE);
@@ -241,6 +246,7 @@ void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
 void TouchLoop() {
   if (HAL_GetTick() >= next_conv_tick) {
     next_conv_tick = -1;
+    ++current_phase;
     if (current_phase >= kNumPhases) {
       if (HAL_GetTick() < kCalibrateTickCount) {
         // Records this data for calibration purposes.
@@ -260,5 +266,6 @@ void TouchLoop() {
       /* Acquisition Error */
       Error_Handler();
     }
+    ++conv_count;
   }
 }
