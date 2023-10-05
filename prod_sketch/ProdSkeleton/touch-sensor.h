@@ -94,6 +94,9 @@ void TouchIoStart(unsigned phase) {
 
 void TouchSetup() {
   __HAL_RCC_TSC_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   GPIO_InitTypeDef GPIO_InitStruct;
 
   /*##-2- Configure Sampling Capacitor IOs (Alternate-Function Open-Drain) ###*/

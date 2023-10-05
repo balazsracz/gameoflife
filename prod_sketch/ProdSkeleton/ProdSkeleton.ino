@@ -122,7 +122,6 @@ void setup() {
   delay(10);
   //serial_north.begin(9600);
   //serial_south.begin(9600);
-  serial_east.begin(9600);
   //serial_west.begin(9600);
 
   
@@ -151,9 +150,22 @@ void setup() {
   GPIO_InitStruct.Pin = GPIO_PIN_9;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  GPIO_InitStruct.Alternate = GPIO_AF4_USART3;
+  GPIO_InitStruct.Pin = GPIO_PIN_10;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin = GPIO_PIN_11;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   // put your setup code here, to run once:
-  TouchSetup();
   TimerSetup();
+
+  //serial_east.begin(9600);
+  //serial_east.end();
+  //pinmap_pinout(digitalPinToPinName(EAST_TX_PIN), PinMap_UART_TX);
+  //pinmap_pinout(digitalPinToPinName(EAST_RX_PIN), PinMap_UART_RX);
+
+  TouchSetup();
+
 }
 
 void loop() {
