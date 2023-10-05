@@ -1,14 +1,24 @@
-#include "touch-sensor.h"
-#include "timer-helper.h"
-#include "local-bus.h"
+
+// ================= API for touch sensor (input buttons) ===================
+
+// Call this function once from setup().
+extern void TouchSetup();
+// Call this function once from loop().
+extern void TouchLoop();
 
 // These variables are set to true when a given row in the key matrix is active (has a finger somewhere).
-// Note: the MENU button has row 1 + row 3 and no columns active. All other buttons have exactly one row and one
+// Note: the MENU button has row 0 + row 2 and no columns active. All other buttons have exactly one row and one
 // column.
 extern bool btn_row_active[4];
 // These variables are set to true when a given column in the key matrix is active (has a finger somewhere).
 extern bool btn_col_active[4];
 
+// Implementation.
+#include "touch-sensor.h"
+
+// ================= definitions for output LEDs. ====================
+
+// These two pins have an LED on them. The LED will light when you write LOW to the respective pin.
 static constexpr int kLed13Pin = PF0;
 static constexpr int kLed14Pin = PF1;
 
@@ -16,19 +26,19 @@ static constexpr int kLed14Pin = PF1;
 static constexpr int kLedChA1Pin = PC14;
 static constexpr int kLedChA2Pin = PC15;
 static constexpr int kLedChA3Pin = PC13;
-const int kLedChA[] = {0, kLedChA1Pin, kLedChA2Pin, kLedChA3Pin };
+const int kLedChA[] = { 0, kLedChA1Pin, kLedChA2Pin, kLedChA3Pin };
 
 // These three pins have LEDs 7-12 (in charlieplexing configuration)
 static constexpr int kLedChB1Pin = PB12;
 static constexpr int kLedChB2Pin = PA15;
 static constexpr int kLedChB3Pin = PA8;
-const int kLedChB[] = {0, kLedChB1Pin, kLedChB2Pin, kLedChB3Pin };
+const int kLedChB[] = { 0, kLedChB1Pin, kLedChB2Pin, kLedChB3Pin };
 
 // These two pins have LEDs 15-16 (in charlieplexing configuration)
 static constexpr int kLedChC1Pin = PB14;
 static constexpr int kLedChC2Pin = PB13;
 static constexpr int kDbg1Pin = PB15;
-const int kLedChC[] = {0, kLedChC1Pin, kLedChC2Pin, kDbg1Pin };
+const int kLedChC[] = { 0, kLedChC1Pin, kLedChC2Pin, kDbg1Pin };
 
 bool leds[24] = { 0 };
 
@@ -80,6 +90,21 @@ void CharlieApply(const CharlieProgram* pgm, const int* pins, bool* data, int id
 // ================= ^^^^ charlieplex handler ==============
 
 
+// ================== API for timers ======================
+
+// Call this function once from setup().
+extern void TimerSetup();
+// Call this function once from loop().
+extern void TimerLoop();
+// This function will be called 6000 times per second by the timer.
+extern void Timer6000Hz();
+// This function will be called 4 times per second by the timer.
+extern void Timer4Hz();
+
+
+// Implementation.
+#include "timer-helper.h"
+
 // This function will be called 6000 times per second by the timer.
 void Timer6000Hz() {
   static unsigned state = 0;
@@ -100,11 +125,34 @@ void Timer4Hz() {
 }
 
 
+// ==================== Local bus API ==================
 
-void setup() { 
+// Call this function once from setup().
+extern void LocalBusSetup();
+// Call this function once from loop().
+extern void LocalBusLoop();
+
+enum Direction : uint8_t {
+  kNorth,
+  kEast,
+  kSouth,
+  kWest
+};
+
+// Sets the signal active or inactive on a localbus direction.
+extern void LocalBusSignal(Direction dir, bool active);
+// Returns true if the signal in a given direction is active (either from us or from the neighbor).
+extern bool LocalBusIsActive(Direction dir);
+
+#include "local-bus.h"
+ 
+// ========================================================
+
+void setup() {
   // put your setup code here, to run once:
   TimerSetup();
   TouchSetup();
+  LocalBusSetup();
 
 
   pinMode(kLed13Pin, OUTPUT);
@@ -131,14 +179,12 @@ void setup() {
   GPIO_InitStruct.Pin = GPIO_PIN_11;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  
+
 
   //serial_east.begin(9600);
   //serial_east.end();
   //pinmap_pinout(digitalPinToPinName(EAST_TX_PIN), PinMap_UART_TX);
   //pinmap_pinout(digitalPinToPinName(EAST_RX_PIN), PinMap_UART_RX);
-
-
 }
 
 void loop() {

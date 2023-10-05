@@ -1,3 +1,5 @@
+#include "wiring_digital.h"
+#include "digital_io.h"
 
 static constexpr int kNorthTxPin = PA2;
 static constexpr int kNorthRxPin = PA3;
@@ -54,6 +56,46 @@ void LocalBusSetup() {
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   LocalBusGpio();
+}
+
+// Sets the signal active or inactive on a localbus direction.
+void LocalBusSignal(Direction dir, bool active) {
+  int pin = NP;
+  switch (dir) {
+    case kNorth:
+      pin = kNorthTxPin;
+      break;
+    case kEast:
+      pin = kEastTxPin;
+      break;
+    case kSouth:
+      pin = kSouthTxPin;
+      break;
+    case kWest:
+      pin = kWestTxPin;
+      break;
+  }
+  digitalWrite(pin, LOW);
+}
+
+// Returns true if the signal in a given direction is active (either from us or from the neighbor).
+bool LocalBusIsActive(Direction dir) {
+  int pin = NP;
+  switch (dir) {
+    case kNorth:
+      pin = kNorthRxPin;
+      break;
+    case kEast:
+      pin = kEastRxPin;
+      break;
+    case kSouth:
+      pin = kSouthRxPin;
+      break;
+    case kWest:
+      pin = kWestRxPin;
+      break;
+  }
+  return digitalRead(pin) == LOW;
 }
 
 void LocalBusLoop() {}
