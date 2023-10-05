@@ -1,5 +1,6 @@
 #include "touch-sensor.h"
 #include "timer-helper.h"
+#include "local-bus.h"
 
 // These variables are set to true when a given row in the key matrix is active (has a finger somewhere).
 // Note: the MENU button has row 1 + row 3 and no columns active. All other buttons have exactly one row and one
@@ -18,14 +19,14 @@ static constexpr int kLedChA3Pin = PC13;
 const int kLedChA[] = {0, kLedChA1Pin, kLedChA2Pin, kLedChA3Pin };
 
 // These three pins have LEDs 7-12 (in charlieplexing configuration)
-static constexpr int kLedChB2Pin = PA15;
 static constexpr int kLedChB1Pin = PB12;
+static constexpr int kLedChB2Pin = PA15;
 static constexpr int kLedChB3Pin = PA8;
 const int kLedChB[] = {0, kLedChB1Pin, kLedChB2Pin, kLedChB3Pin };
 
 // These two pins have LEDs 15-16 (in charlieplexing configuration)
-static constexpr int kLedChC2Pin = PB13;
 static constexpr int kLedChC1Pin = PB14;
+static constexpr int kLedChC2Pin = PB13;
 static constexpr int kDbg1Pin = PB15;
 const int kLedChC[] = {0, kLedChC1Pin, kLedChC2Pin, kDbg1Pin };
 
@@ -94,48 +95,22 @@ void Timer4Hz() {
   ++ctr;
   memset(leds, 0, sizeof(leds));
   leds[ctr % 16] = 1;
-  //leds[13 - 1] = ctr & 1;
-  //leds[14 - 1] = !(ctr & 1);
   SerialUSB.printf("%08x %08x %d conv_count=%d next_conv_tick=%d\n", *((uint32_t*)btn_row_active),
                    *((uint32_t*)btn_col_active), HAL_GetTick(), conv_count, next_conv_tick);
 }
 
-static constexpr int NORTH_TX_PIN = PA2;
-static constexpr int NORTH_RX_PIN = PA3;
-static constexpr int SOUTH_TX_PIN = PA9;
-static constexpr int SOUTH_RX_PIN = PA10;
-static constexpr int EAST_TX_PIN = PB10;
-static constexpr int EAST_RX_PIN = PB11;
-static constexpr int WEST_TX_PIN = PA0;
-static constexpr int WEST_RX_PIN = PA1;
-
-//static constexpr int DBG2_PIN = PB15;
-//static constexpr int DBG1_PIN = PB5;
 
 
-HardwareSerial serial_north(NORTH_RX_PIN, NORTH_TX_PIN);
-HardwareSerial serial_south(SOUTH_RX_PIN, SOUTH_TX_PIN);
-HardwareSerial serial_east(EAST_RX_PIN, EAST_TX_PIN);
-HardwareSerial serial_west(WEST_RX_PIN, WEST_TX_PIN);
+void setup() { 
+  // put your setup code here, to run once:
+  TimerSetup();
+  TouchSetup();
 
-void setup() {
-  delay(10);
-  //serial_north.begin(9600);
-  //serial_south.begin(9600);
-  //serial_west.begin(9600);
 
-  
   pinMode(kLed13Pin, OUTPUT);
   pinMode(kLed14Pin, OUTPUT);
 
- for (auto pin : { LL_GPIO_PIN_0, LL_GPIO_PIN_1, LL_GPIO_PIN_2, LL_GPIO_PIN_3, LL_GPIO_PIN_9, LL_GPIO_PIN_10 }) {
-    LL_GPIO_SetPinOutputType(GPIOA, pin, LL_GPIO_OUTPUT_OPENDRAIN);
-    LL_GPIO_SetPinPull(GPIOA, pin, LL_GPIO_PULL_UP);
-  }
-  for (auto pin : { LL_GPIO_PIN_8, LL_GPIO_PIN_9, LL_GPIO_PIN_10, LL_GPIO_PIN_11 }) {
-    LL_GPIO_SetPinOutputType(GPIOB, pin, LL_GPIO_OUTPUT_OPENDRAIN);
-    LL_GPIO_SetPinPull(GPIOB, pin, LL_GPIO_PULL_UP);
-  }
+
 
   GPIO_InitTypeDef GPIO_InitStruct;
   memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
@@ -156,15 +131,13 @@ void setup() {
   GPIO_InitStruct.Pin = GPIO_PIN_11;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  // put your setup code here, to run once:
-  TimerSetup();
+  
 
   //serial_east.begin(9600);
   //serial_east.end();
   //pinmap_pinout(digitalPinToPinName(EAST_TX_PIN), PinMap_UART_TX);
   //pinmap_pinout(digitalPinToPinName(EAST_RX_PIN), PinMap_UART_RX);
 
-  TouchSetup();
 
 }
 
@@ -175,8 +148,4 @@ void loop() {
 
   digitalWrite(kLed13Pin, !leds[13 - 1]);
   digitalWrite(kLed14Pin, !leds[14 - 1]);
-
-  //for (unsigned i = 0; i < 16; ++i) {
-  //  leds[i] = btn_row_active[i / 4] || btn_col_active[i % 4];
-  //}
 }
