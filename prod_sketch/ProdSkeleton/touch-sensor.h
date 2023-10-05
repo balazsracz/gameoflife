@@ -1,3 +1,6 @@
+#include "stm32f0xx_hal_tsc.h"
+#include "USBSerial.h"
+#include "stm32_def.h"
 #include "stm32f0xx_hal.h"
 
 
@@ -71,6 +74,21 @@ uint32_t next_conv_tick = 0;
 extern "C" {
   void TSC_IRQHandler(void) {
     HAL_TSC_IRQHandler(&TscHandle);
+  }
+}
+
+void TouchIoStart(unsigned phase) {
+  if (phase >= kNumPhases) {
+    phase = 0;
+  }
+  /*##-2- Configure the touch-sensing IOs ####################################*/
+  IoConfig.ChannelIOs = kPhases[phase].channel_ios;
+  IoConfig.SamplingIOs = TSC_GROUP2_IO1 | TSC_GROUP3_IO2 | TSC_GROUP5_IO1;
+  IoConfig.ShieldIOs = 0;
+
+  if (HAL_TSC_IOConfig(&TscHandle, &IoConfig) != HAL_OK) {
+    /* Initialization Error */
+    Error_Handler();
   }
 }
 
@@ -150,24 +168,9 @@ void TouchSetup() {
   GPIO_InitStruct.Pin = GPIO_PIN_5;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-
+  TouchIoStart(0);
   HAL_TSC_IODischarge(&TscHandle, ENABLE);
   next_conv_tick = HAL_GetTick() + 2;
-}
-
-void TouchIoStart(unsigned phase) {
-  if (phase >= kNumPhases) {
-    phase = 0;
-  }
-  /*##-2- Configure the touch-sensing IOs ####################################*/
-  IoConfig.ChannelIOs = kPhases[phase].channel_ios;
-  IoConfig.SamplingIOs = TSC_GROUP2_IO1 | TSC_GROUP3_IO2 | TSC_GROUP5_IO1;
-  IoConfig.ShieldIOs = 0;
-
-  if (HAL_TSC_IOConfig(&TscHandle, &IoConfig) != HAL_OK) {
-    /* Initialization Error */
-    Error_Handler();
-  }
 }
 
 // Updates the calibration data structure with the more recent measurement results.
@@ -215,6 +218,7 @@ int tdeb(unsigned rc, unsigned num) {
   * @retval None
   */
 extern "C" void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
+  //Error_Handler();
   const AcquisitionPhase& cphase = kPhases[current_phase];
   /*##-5- Discharge the touch-sensing IOs ####################################*/
   HAL_TSC_IODischarge(&TscHandle, ENABLE);
@@ -242,9 +246,26 @@ extern "C" void HAL_TSC_ConvCpltCallback(TSC_HandleTypeDef* htsc) {
   next_conv_tick = HAL_GetTick() + 2;
 }
 
+bool tsc_error = false;
+
+void HAL_TSC_ErrorCallback(TSC_HandleTypeDef* htsc) {
+  tsc_error = true;
+}
+
+uint32_t conv_start_tick = -1;
+
 // Call this function from the loop().
 void TouchLoop() {
-  if (HAL_GetTick() >= next_conv_tick) {
+  if (tsc_error) {
+    SerialUSB.printf("TSC error phase %d\n", current_phase);
+    tsc_error = false;
+    //HAL_TSC_DeInit(&TscHandle);
+    //TouchSetup();
+    next_conv_tick = HAL_GetTick() + 100;
+  }
+  //Error_Handler();
+  auto t = HAL_GetTick();
+  if (t >= next_conv_tick) {
     next_conv_tick = -1;
     ++current_phase;
     if (current_phase >= kNumPhases) {
@@ -260,8 +281,14 @@ void TouchLoop() {
       }
       current_phase = 0;
     }
-    // Collect next sample.
+    // Prepare for next sample.
     TouchIoStart(current_phase);
+    HAL_TSC_IODischarge(&TscHandle, ENABLE);
+    conv_start_tick = t + 1;
+  }
+  if (t >= conv_start_tick) {
+    conv_start_tick = -1;
+    HAL_TSC_IODischarge(&TscHandle, DISABLE);
     if (HAL_TSC_Start_IT(&TscHandle) != HAL_OK) {
       /* Acquisition Error */
       Error_Handler();
