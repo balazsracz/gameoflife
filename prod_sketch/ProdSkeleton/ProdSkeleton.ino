@@ -89,6 +89,22 @@ void CharlieApply(const CharlieProgram* pgm, const int* pins, bool* data, int id
 
 // ================= ^^^^ charlieplex handler ==============
 
+// ================== Global bus API ======================
+// Implement this function for handling events coming from the local bus.
+extern void OnGlobalEvent(uint64_t event);
+
+// Call this function to send a broadcast event to the global bus.
+extern void SendEvent(uint64_t event_id);
+
+// Call this function once from setup().
+extern void GlobalBusSetup();
+
+// Call this function from the loop() handler.
+extern void GlobalBusLoop();
+
+#include "global-bus.h"
+
+// ========================================================
 
 // ================== API for timers ======================
 
@@ -122,6 +138,15 @@ void Timer4Hz() {
   leds[ctr % 16] = 1;
   SerialUSB.printf("%08x %08x %d conv_count=%d next_conv_tick=%d\n", *((uint32_t*)btn_row_active),
                    *((uint32_t*)btn_col_active), HAL_GetTick(), conv_count, next_conv_tick);
+  if ((btn_col_active[1] || btn_col_active[2]) && (btn_row_active[1] || btn_row_active[2])) {
+    uint64_t ev = kEventPrefix;
+    if (btn_col_active[1]) ev += 6;
+    else if (btn_col_active[2]) ev += 7;
+    if (btn_row_active[2]) ev |= 4;
+    ev -= 1;
+    SendEvent(ev);
+    SerialUSB.printf("event sent: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
+  }
 }
 
 
@@ -145,39 +170,32 @@ extern void LocalBusSignal(Direction dir, bool active);
 extern bool LocalBusIsActive(Direction dir);
 
 #include "local-bus.h"
- 
+
 // ========================================================
+
+
+void OnGlobalEvent(uint64_t ev) {
+  SerialUSB.printf("event arrived: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
+  leds[ev & 15] = true;
+}
+
 
 void setup() {
   // put your setup code here, to run once:
   TimerSetup();
   TouchSetup();
   LocalBusSetup();
-
+  GlobalBusSetup();
 
   pinMode(kLed13Pin, OUTPUT);
   pinMode(kLed14Pin, OUTPUT);
-
-
-
-  GPIO_InitTypeDef GPIO_InitStruct;
-  memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
-
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Alternate = GPIO_AF4_CAN;
-
-  GPIO_InitStruct.Pin = GPIO_PIN_8;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   TouchLoop();
   TimerLoop();
+  GlobalBusLoop();
 
   digitalWrite(kLed13Pin, !leds[13 - 1]);
   digitalWrite(kLed14Pin, !leds[14 - 1]);
