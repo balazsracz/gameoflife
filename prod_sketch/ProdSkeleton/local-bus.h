@@ -5,8 +5,8 @@ static constexpr int kNorthTxPin = PA2;
 static constexpr int kNorthRxPin = PA3;
 static constexpr int kSouthTxPin = PA9;
 static constexpr int kSouthRxPin = PA10;
-static constexpr int kEastTxPin = PB10;
 static constexpr int kEastRxPin = PB11;
+static constexpr int kEastTxPin = PB10;
 static constexpr int kWestTxPin = PA0;
 static constexpr int kWestRxPin = PA1;
 
@@ -16,10 +16,16 @@ void LocalGpioOD() {
     LL_GPIO_SetPinOutputType(GPIOA, pin, LL_GPIO_OUTPUT_OPENDRAIN);
     LL_GPIO_SetPinPull(GPIOA, pin, LL_GPIO_PULL_UP);
   }
+  //for (auto pin : { LL_GPIO_PIN_0, LL_GPIO_PIN_2, LL_GPIO_PIN_9 }) {
+  //  LL_GPIO_SetPinMode(GPIOA, pin, LL_GPIO_MODE_OUTPUT);
+  //}
   for (auto pin : { LL_GPIO_PIN_8, LL_GPIO_PIN_9, LL_GPIO_PIN_10, LL_GPIO_PIN_11 }) {
     LL_GPIO_SetPinOutputType(GPIOB, pin, LL_GPIO_OUTPUT_OPENDRAIN);
     LL_GPIO_SetPinPull(GPIOB, pin, LL_GPIO_PULL_UP);
   }
+  //for (auto pin : { LL_GPIO_PIN_10 }) {
+  //  LL_GPIO_SetPinMode(GPIOB, pin, LL_GPIO_MODE_OUTPUT);
+  //}
 }
 
 // Prepares the local connections for GPIO mode.
@@ -75,7 +81,7 @@ void LocalBusSignal(Direction dir, bool active) {
       pin = kWestTxPin;
       break;
   }
-  digitalWrite(pin, LOW);
+  digitalWrite(pin, active ? LOW : HIGH);
 }
 
 // Returns true if the signal in a given direction is active (either from us or from the neighbor).
