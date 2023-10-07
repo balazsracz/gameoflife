@@ -215,16 +215,6 @@ bool read_can_frame(struct can_frame *can_frame) {
   return true;
 }
 
-void SendEvent(uint64_t ev) {
-  struct can_frame f;
-  SET_CAN_FRAME_ID_EFF(f, 0x195b4123);
-  ev = __builtin_bswap64(ev);
-  memcpy(f.data, &ev, 8);
-  f.can_dlc = 8;
-  if (!try_send_can_frame(f)) {
-    SerialUSB.printf("error sending CAN frame.\n");
-  }
-}
 
 extern uint64_t nmranet_nodeid(void);
 
@@ -1290,14 +1280,15 @@ void handle_global_message(Defs::MTI mti) {
         state_.input_frame_full = 0;
         return;
       }
+
+    default:
+      break;
   }
-  default:
-    break;
-}
-// Drop to the floor.
-state_.input_frame_full = 0;
-/// @todo(balazs.racz) what about global identify messages?
-return;
+
+  // Drop to the floor.
+  state_.input_frame_full = 0;
+  /// @todo(balazs.racz) what about global identify messages?
+  return;
 }
 
 /// Handles an incoming CAN frame.
@@ -1554,6 +1545,17 @@ bool openlcb_loop() {
 
 uint64_t nmranet_nodeid() {
   return 0x050101011470;
+}
+
+void SendEvent(uint64_t ev) {
+  struct can_frame f;
+  SET_CAN_FRAME_ID_EFF(f, 0x195b4000 | openlcb::state_.alias);
+  ev = __builtin_bswap64(ev);
+  memcpy(f.data, &ev, 8);
+  f.can_dlc = 8;
+  if (!try_send_can_frame(f)) {
+    SerialUSB.printf("error sending CAN frame.\n");
+  }
 }
 
 void GlobalBusLoop() {
