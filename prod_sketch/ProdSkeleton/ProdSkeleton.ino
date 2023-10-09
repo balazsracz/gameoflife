@@ -173,12 +173,15 @@ extern bool LocalBusIsActive(Direction dir);
 
 // ========================================================
 
+#include "protocol-engine.h"
 
-void OnGlobalEvent(uint64_t ev) {
+ProtocolEngine engine;
+
+void OnGlobalEvent(uint64_t ev, uint16_t src) {
+  engine.OnGlobalEvent(ev, src);
   SerialUSB.printf("event arrived: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
   leds[ev & 15] = true;
 }
-
 
 void setup() {
   // put your setup code here, to run once:
@@ -186,6 +189,7 @@ void setup() {
   TouchSetup();
   LocalBusSetup();
   GlobalBusSetup();
+  engine.Setup(&SendEvent);
 
   pinMode(kLed13Pin, OUTPUT);
   pinMode(kLed14Pin, OUTPUT);
@@ -196,6 +200,7 @@ void loop() {
   TouchLoop();
   TimerLoop();
   GlobalBusLoop();
+  engine.Loop();
 
   digitalWrite(kLed13Pin, !leds[13 - 1]);
   digitalWrite(kLed14Pin, !leds[14 - 1]);

@@ -1,10 +1,11 @@
 #include "USBSerial.h"
 
 
-static constexpr uint64_t kEventPrefix = UINT64_C(0x09000D0000000000);
 
 // Implement this function for handling events coming from the local bus.
-extern void OnGlobalEvent(uint64_t event);
+// @param event a 64-bit payload determining what this event is.
+// @param src the sender of this event (12-bit unstable identifier)
+extern void OnGlobalEvent(uint64_t event, uint16_t src);
 
 // Call this function to send a broadcast event to the global bus.
 extern void SendEvent(uint64_t event_id);
@@ -1261,6 +1262,7 @@ void handle_addressed_message(Defs::MTI mti) {
 
 /// Handles incoming global message.
 void handle_global_message(Defs::MTI mti) {
+  uint32_t can_id = GET_CAN_FRAME_ID_EFF(state_.input_frame);
   switch (mti) {
     case Defs::MTI_VERIFY_NODE_ID_GLOBAL:
       {
@@ -1278,7 +1280,7 @@ void handle_global_message(Defs::MTI mti) {
         uint64_t ev = 0;
         memcpy(&ev, state_.input_frame.data, 8);
         ev = __builtin_bswap64(ev);
-        OnGlobalEvent(ev);
+        OnGlobalEvent(ev, can_id & 0xfff);
         state_.input_frame_full = 0;
         return;
       }
