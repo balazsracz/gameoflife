@@ -1012,6 +1012,8 @@ struct BootloaderState {
 
   NodeAlias alias;
   InitState init_state;
+  // Tick number when we can send out the RID frame.
+  uint32_t send_rid_timestamp{0};
 
   // response datagram
   NodeAlias datagram_dst;
@@ -1436,10 +1438,15 @@ void handle_init() {
         setup_can_frame();
         CanDefs::control_init(
           state_.output_frame, state_.alias, nmranet_nodeid() & 0xfff, 4);
+        state_.send_rid_timestamp = millis() + 210;
         break;
       }
     case WAIT_RID:
       {
+        if (millis() < state_.send_rid_timestamp) {
+          // do not advance.
+          return;
+        }
         break;
       }
     case SEND_RID:
