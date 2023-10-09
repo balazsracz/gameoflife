@@ -1407,7 +1407,7 @@ void handle_init() {
         } else {
           do {
             state_.alias =
-              (state_.alias + ((uint16_t(node)) & 0xffe) + 1759) & 0xfff;
+              (state_.alias + ((uint16_t(node)) << 1) + 1759) & 0xfff;
           } while (!state_.alias);
         }
         break;
