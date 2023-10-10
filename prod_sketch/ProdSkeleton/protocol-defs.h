@@ -32,21 +32,21 @@ public:
     kLocalFound = 0xF3,
     // Requests a local signal to be toggled. dir is the lowest two bits of the command. x,y are the target coordinate. Arg unused. Sent by the master.
     kToggleLocalSignal = 0xEC,
-    // Reports who is our neighbor. x,y, are the source (reporting) node. argx-argy are the neighbor node. dir of the reporting node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command.
+    // Reports who is our neighbor. x,y, are the source (reporting) node. argx-argy are the neighbor node. dir of the reporting node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the node.
     kReportNeighbor = 0xD0,
+    // Sets who is our neighbor. x,y, are the target node (to change). argx-argy are the neighbor node. dir of the target node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the master.
+    kSetNeighbor = 0xC0,
 
-
+    // Direction bit values.
     kDirNorth = 0,
     kDirEast = 1,
     kDirSouth = 2,
     kDirWest = 3,
   };
 
-  static constexpr uint64_t
-
-    private :
-    // do not instantiate this class.
-    ProtocolDefs();
+private:
+  // do not instantiate this class.
+  ProtocolDefs();
 };  // struct ProtocolDefs
 
 
