@@ -1,3 +1,5 @@
+#include "protocol-defs.h"
+
 
 // ================= API for touch sensor (input buttons) ===================
 
@@ -139,7 +141,7 @@ void Timer4Hz() {
   SerialUSB.printf("%08x %08x %d conv_count=%d next_conv_tick=%d\n", *((uint32_t*)btn_row_active),
                    *((uint32_t*)btn_col_active), HAL_GetTick(), conv_count, next_conv_tick);
   if ((btn_col_active[1] || btn_col_active[2]) && (btn_row_active[1] || btn_row_active[2])) {
-    uint64_t ev = kEventPrefix;
+    uint64_t ev = ProtocolDefs::kEventPrefix;
     if (btn_col_active[1]) ev += 6;
     else if (btn_col_active[2]) ev += 7;
     if (btn_row_active[2]) ev |= 4;
@@ -157,13 +159,6 @@ extern void LocalBusSetup();
 // Call this function once from loop().
 extern void LocalBusLoop();
 
-enum Direction : uint8_t {
-  kNorth,
-  kEast,
-  kSouth,
-  kWest
-};
-
 // Sets the signal active or inactive on a localbus direction.
 extern void LocalBusSignal(Direction dir, bool active);
 // Returns true if the signal in a given direction is active (either from us or from the neighbor).
@@ -174,6 +169,29 @@ extern bool LocalBusIsActive(Direction dir);
 // ========================================================
 
 #include "protocol-engine.h"
+
+class ProtocolEngineIfImpl : public ProtocolEngineInterface {
+  void SendEvent(uint64_t event_id) override {
+    ::SendEvent(event_id);
+  }
+
+  // @return the currently used alias of the local node.
+  uint16_t GetAlias() override {
+    return openlcb::state_.alias;
+  }
+
+  void LocalBusSignal(Direction dir, bool active) {
+    ::LocalBusSignal(dir, active);
+  }
+  bool LocalBusIsActive(Direction dir) override {
+    return ::LocalBusIsActive(dir);
+  };
+
+  uint32_t millis() override {
+    return HAL_GetTick();
+  }
+
+} global_impl;
 
 ProtocolEngine engine;
 
@@ -189,7 +207,7 @@ void setup() {
   TouchSetup();
   LocalBusSetup();
   GlobalBusSetup();
-  engine.Setup(&SendEvent);
+  engine.Setup(&global_impl);
 
   pinMode(kLed13Pin, OUTPUT);
   pinMode(kLed14Pin, OUTPUT);
