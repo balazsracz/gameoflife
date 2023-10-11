@@ -96,7 +96,6 @@ void GlobalBusSetup() {
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_CAN1_CLK_ENABLE();
 
-
   GPIO_InitTypeDef GPIO_InitStruct;
   memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));
 
@@ -1018,7 +1017,7 @@ struct BootloaderState {
   NodeAlias alias;
   InitState init_state;
   // Tick number when we can send out the RID frame.
-  uint32_t send_rid_timestamp{0};
+  uint32_t send_rid_timestamp{ 0 };
 
   // response datagram
   NodeAlias datagram_dst;
@@ -1556,9 +1555,13 @@ bool openlcb_loop() {
 
 }  // namespace openlcb
 
+static constexpr uint32_t kOBHiAddress = 0x1FFFF806;
+static constexpr uint32_t kOBLoAddress = 0x1FFFF804;
+
 uint64_t nmranet_nodeid() {
-  return 0x050101011470;
+  return 0x050101010000 | ((*(uint8_t *)kOBHiAddress) << 8) | (*(uint8_t *)kOBLoAddress);
 }
+
 
 bool SendEvent(uint64_t ev) {
   struct can_frame f;
