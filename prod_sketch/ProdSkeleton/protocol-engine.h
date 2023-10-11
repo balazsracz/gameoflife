@@ -58,9 +58,12 @@ public:
         {
           pending_x_ = 0xff;
           pending_y_ = 0xff;
-          CancelLocalSignal();
-          timeout_ = INVALID_TIMEOUT;
-          cancel_local_signal_ = false;
+          // If we are sending a signal right now.
+          if (to_cancel_local_signal_) {
+            CancelLocalSignal();
+            timeout_ = INVALID_TIMEOUT;
+            to_cancel_local_signal_ = false;
+          }
           break;
         }
       case Defs::kToggleLocalSignal:
@@ -69,12 +72,12 @@ public:
           if (ForMe(ev)) {
             timeout_ = iface_->millis() + 2;
             iface_->LocalBusSignal(dir, true);
-            cancel_local_signal_ = true;
+            to_cancel_local_signal_ = true;
           } else {
             // Remembers who is being toggled.
-            pending_dir_ = dir;
-            pending_x_ = GetX(ev);
-            pending_y_ = GetY(ev);
+            pending_neigh_dir_ = dir;
+            pending_neigh_x_ = Defs::GetX(ev);
+            pending_neigh_y_ = Defs::GetY(ev);
           }
           break;
         }
@@ -86,15 +89,17 @@ private:
   using Defs = ProtocolDefs;
 
   // Indexed with a Direction, delta x coordinate.
-  static const int deltax[] = { 0, 1, 0, -1 };
+  static constexpr const int deltax[4] = { 0, 1, 0, -1 };
   // Indexed with a Direction, delta y coordinate.
-  static const int deltay[] = { 1, 0, -1, 0 };
+  static constexpr const int deltay[4] = { 1, 0, -1, 0 };
 
   // Restores the internal state to a fresh boot.
   void InitState() {
-    cancel_local_signal_ = false;
-    my_x_ = my_y_ = pending_x_ = pending_y_ = 0xff;
+    to_cancel_local_signal_ = false;
+    my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y = 0xff;
     timeout_ = INVALID_TIMEOUT;
+    neighbors_.clear();
+
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -139,7 +144,7 @@ private:
   uint8_t pending_neigh_x_{ 0xff };
   uint8_t pending_neigh_y_{ 0xff };
   // Which direction on the neighbor that was triggered.
-  Direction pending_dir_;
+  Direction pending_neigh_dir_;
 
   // My assigned coordinates.
   uint8_t my_x_{ 0xff };
@@ -153,15 +158,14 @@ private:
     uint8_t neigh_y;
     // Direction on the neighbor side
     Direction neigh_dir;
-  }
+  };
   // Neighbor's assigned coordinates.
-  uint8_t my_x_{ 0xff };
-  uint8_t my_y_{ 0xff };
+  std::vector<Link> neighbors_;
 
   static constexpr uint32_t INVALID_TIMEOUT = (uint32_t)-1;
   // HAL tick when we should move away from from
   uint32_t timeout_{ INVALID_TIMEOUT };
 
   // what to do when we are done with the timeout.
-  bool cancel_local_signal_ : 1;
+  bool to_cancel_local_signal_ : 1;
 };  // class ProtocolEngine
