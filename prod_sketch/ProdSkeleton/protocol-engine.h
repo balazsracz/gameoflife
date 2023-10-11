@@ -1,3 +1,4 @@
+#include "USBSerial.h"
 #include "protocol-defs.h"
 
 class ProtocolEngineInterface {
@@ -7,7 +8,7 @@ public:
   // @return true if the message was sent, false if it was dropped.
   virtual bool SendEvent(uint64_t event_id) = 0;
 
-  // @return the currently used alias of the local node.
+  // @return the currently used alias of the local node,  or 0 if the node is not initialized yet.
   virtual uint16_t GetAlias() = 0;
 
   virtual void LocalBusSignal(Direction dir, bool active) = 0;
@@ -37,17 +38,48 @@ public:
 
   // Call this function from the loop() handler.
   void Loop() {
-    if (iface_->millis() >= timeout_) {
+    auto millis = iface_->millis();
+    if (millis >= timeout_) {
       HandleTimeout();
     }
     if (pending_x_ != INVALID_COORD && pending_y_ != INVALID_COORD) {
       LookForLocalSignal();
     }
     if (next_neighbor_report_ < INVALID_DIR && !iface_->TxPending()) {
-      const auto& l = neighbors_[next_neighbor_report_];
-      if (l.neigh_x != INVALID_COORD) {
-        // there is a neighbor here.
-        iface_->SendEvent(Defs::CreateEvent(Defs::kReportNeighbor, my_x_, my_y_, l.neigh_x, l.neigh_y, (Direction)next_neighbor_report_, l.neigh_dir));
+      if (my_x_ == INVALID_COORD) {
+        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kInitDone));
+        next_neighbor_report_ = INVALID_DIR;
+      } else {
+        const auto& l = neighbors_[next_neighbor_report_];
+        if (l.neigh_x != INVALID_COORD) {
+          // there is a neighbor here.
+          iface_->SendEvent(Defs::CreateEvent(Defs::kReportNeighbor, my_x_, my_y_, l.neigh_x, l.neigh_y, (Direction)next_neighbor_report_, l.neigh_dir));
+        }
+      }
+    }
+    if (need_init_done_ && iface_->GetAlias() != 0 && !iface_->TxPending()) {
+      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kInitDone));
+      need_init_done_ = false;
+      idle_timeout_ = millis + 10;
+    }
+    if (!seen_master_ && millis >= idle_timeout_) {
+      // Let's trigger a master election.
+      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeMaster));
+      master_alias_ = iface_->GetAlias();
+      pending_master_ = true;
+      idle_timeout_ = millis + 10;
+    }
+    if (pending_master_ && millis >= idle_timeout_) {
+      // Master election complete.
+      pending_master_ = false;
+      idle_timeout_ = millis + 10;
+      iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareMaster, 0, 0, master_alias_));
+      if (master_alias_ == iface_->GetAlias()) {
+        is_master_ = true;
+        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmMaster));
+        SerialUSB.printf("I am master %03x\n", master_alias_);
+      } else {
+        SerialUSB.printf("Master is %03x\n", master_alias_);
       }
     }
   }
@@ -56,11 +88,12 @@ public:
   // @param ev the 64-bit event payload.
   // @param src the source node alias that sent this event
   void OnGlobalEvent(int64_t ev, uint16_t src) {
+    idle_timeout_ = iface_->millis() + 10;
     Defs::Command cmd = Defs::GetCommand(ev);
     switch (cmd) {
       case Defs::kGlobalCmd:
         {
-          return HandleGlobalCommand(Defs::GetArg(ev));
+          return HandleGlobalCommand(Defs::GetArg(ev), src);
         }
       case Defs::kLocalAssign:
         {
@@ -82,7 +115,7 @@ public:
         }
       case Defs::kToggleLocalSignal:
         {
-          Direction dir = (Direction)(cmd & 0x3);
+          Direction dir = Defs::GetDir(ev);
           if (ForMe(ev)) {
             timeout_ = iface_->millis() + 2;
             iface_->LocalBusSignal(dir, true);
@@ -113,8 +146,14 @@ private:
     next_neighbor_report_ = INVALID_DIR;
     my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
     timeout_ = INVALID_TIMEOUT;
+    idle_timeout_ = iface_->millis() + 10;
     neighbors_.clear();
     neighbors_.resize(4);  // number of directions
+    need_init_done_ = true;
+    seen_master_ = false;
+    pending_master_ = false;
+    is_master_ = false;
+    master_alias_ = 0xF000;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -124,7 +163,7 @@ private:
 
   // Called by the event handler when a global command event arrives.
   // @param arg the lowest bits of the event id (determine what to do).
-  void HandleGlobalCommand(uint16_t arg) {
+  void HandleGlobalCommand(uint16_t arg, uint16_t src) {
     Defs::GlobalCommand gcmd = (Defs::GlobalCommand)arg;
     switch (gcmd) {
       case Defs::kReboot:
@@ -137,6 +176,16 @@ private:
         // This will start the state machine in the Loop().
         next_neighbor_report_ = 0;
         return;
+      case Defs::kIAmMaster:
+        seen_master_ = true;
+        pending_master_ = false;
+        return;
+      case Defs::kProposeMaster:
+        if (src < master_alias_) {
+          master_alias_ = src;
+        }
+        pending_master_ = true;
+        break;
     }
   }
 
@@ -211,15 +260,29 @@ private:
   // Neighbor's assigned coordinates.
   std::vector<Link> neighbors_;
 
+  // millis() tick when we claim the bus is idle.
+  uint32_t idle_timeout_{ INVALID_TIMEOUT };
+
   static constexpr uint32_t INVALID_TIMEOUT = (uint32_t)-1;
-  // HAL tick when we should move away from from
+  // millis() value when we should complete the current operation (marked by to_* variables)
   uint32_t timeout_{ INVALID_TIMEOUT };
 
-  // what to do when we are done with the timeout.
-  bool to_cancel_local_signal_ : 1;
+  // Smallest alias that we know can be a master.
+  uint16_t master_alias_;
 
   // This value in next_neighbor_report_ is invalid.
   static constexpr unsigned INVALID_DIR = 4;
   // If this is 0..3, then a neighbor report needs to be emitted.
   unsigned next_neighbor_report_ : 3;
+  // true if we have not yet sent out the init done event.
+  bool need_init_done_ : 1;
+  // true if we've seen a master node.
+  bool seen_master_ : 1;
+  // true if we are in master election.
+  bool pending_master_ : 1;
+  // true if this node is the master.
+  bool is_master_ : 1;
+
+  // to_*: what to do when we are done with the timeout.
+  bool to_cancel_local_signal_ : 1;
 };  // class ProtocolEngine

@@ -177,6 +177,9 @@ class ProtocolEngineIfImpl : public ProtocolEngineInterface {
 
   // @return the currently used alias of the local node.
   uint16_t GetAlias() override {
+    if (openlcb::state_.init_state != openlcb::INITIALIZED) {
+      return 0;
+    }
     return openlcb::state_.alias;
   }
 

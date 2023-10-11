@@ -42,6 +42,8 @@ public:
     kLocalFound = 0xF3,
     // Reports that there are conflicting coordinates from a local assign. x,y are the old coordinates (which stay in effect). ArgX, ArgY are the new coordinates (that were not assigned). Sent by the node.
     kLocalConflict = 0xF6,
+    // Reports who the master is (according to the sender as an observer). x,y are unused, arg is the alias of the master.
+    kDeclareMaster = 0xF7,
     // Requests a local signal to be toggled. dir is the lowest two bits of the command. x,y are the target coordinate. Arg unused. Sent by the master.
     kToggleLocalSignal = 0xEC,
     // Reports who is our neighbor. x,y, are the source (reporting) node. argx-argy are the neighbor node. dir of the reporting node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the node.
@@ -68,6 +70,12 @@ public:
     kReboot = 2,
     // Report all neighbors.
     kReportNeighbors = 3,
+    // Reports a freshly initialized node.
+    kInitDone = 4,
+    // Reports that the sender is the master.
+    kIAmMaster = 5,
+    // Start master election; I can be master.
+    kProposeMaster = 6,
   };
 
   // Extract the command from an event.
@@ -83,6 +91,16 @@ public:
     return (Command)0;
   }
 
+  // @return the first direction field in the event encoding (bottom two bits of command byte)
+  static Direction GetDir(uint64_t ev) {
+    uint8_t raw_value = (ev & kCmdMask) >> kCmdShift;
+    return (Direction)(raw_value & 3);
+  }
+  // @return the second direction field in the event encoding (second two bits of the command byte).
+  static Direction GetDir2(uint64_t ev) {
+    uint8_t raw_value = (ev & kCmdMask) >> (kCmdShift + 2);
+    return (Direction)(raw_value & 3);
+  }
   // Extracts the X parameter from an event.
   static uint8_t GetX(uint64_t ev) {
     return (ev & kXMask) >> kXShift;
