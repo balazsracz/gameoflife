@@ -18,6 +18,9 @@ public:
 
   // @return true if there is a pending send.
   virtual bool TxPending() = 0;
+
+  // Reboot the microcontroller. Does not return.
+  virtual void Reboot() = 0;
 };  // class ProtocolEngineInterface
 
 class ProtocolEngine {
@@ -39,6 +42,13 @@ public:
     }
     if (pending_x_ != INVALID_COORD && pending_y_ != INVALID_COORD) {
       LookForLocalSignal();
+    }
+    if (next_neighbor_report_ < INVALID_DIR && !iface_->TxPending()) {
+      const auto& l = neighbors_[next_neighbor_report_];
+      if (l.neigh_x != INVALID_COORD) {
+        // there is a neighbor here.
+        iface_->SendEvent(Defs::CreateEvent(Defs::kReportNeighbor, my_x_, my_y_, l.neigh_x, l.neigh_y, (Direction)next_neighbor_report_, l.neigh_dir));
+      }
     }
   }
 
@@ -100,6 +110,7 @@ private:
   // Restores the internal state to a fresh boot.
   void InitState() {
     to_cancel_local_signal_ = false;
+    next_neighbor_report_ = INVALID_DIR;
     my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
     timeout_ = INVALID_TIMEOUT;
     neighbors_.clear();
@@ -113,7 +124,21 @@ private:
 
   // Called by the event handler when a global command event arrives.
   // @param arg the lowest bits of the event id (determine what to do).
-  void HandleGlobalCommand(uint16_t arg) {}
+  void HandleGlobalCommand(uint16_t arg) {
+    Defs::GlobalCommand gcmd = (Defs::GlobalCommand)arg;
+    switch (gcmd) {
+      case Defs::kReboot:
+        iface_->Reboot();
+        return;
+      case Defs::kReInit:
+        InitState();
+        return;
+      case Defs::kReportNeighbors:
+        // This will start the state machine in the Loop().
+        next_neighbor_report_ = 0;
+        return;
+    }
+  }
 
   // Stops emitting a local signal to all directions.
   void CancelLocalSignal() {
@@ -192,4 +217,9 @@ private:
 
   // what to do when we are done with the timeout.
   bool to_cancel_local_signal_ : 1;
+
+  // This value in next_neighbor_report_ is invalid.
+  static constexpr unsigned INVALID_DIR = 4;
+  // If this is 0..3, then a neighbor report needs to be emitted.
+  unsigned next_neighbor_report_ : 3;
 };  // class ProtocolEngine

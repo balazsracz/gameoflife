@@ -60,6 +60,16 @@ public:
     k4bArgMask = 0xE0,
   };
 
+  // These are the arguments of the kGlobalCmd events.
+  enum GlobalCommand {
+    // Drop all state and reinitialize all connections.
+    kReInit = 1,
+    // Hard-reboot all nodes.
+    kReboot = 2,
+    // Report all neighbors.
+    kReportNeighbors = 3,
+  };
+
   // Extract the command from an event.
   static Command GetCommand(uint64_t ev) {
     uint8_t raw_value = (ev & kCmdMask) >> kCmdShift;

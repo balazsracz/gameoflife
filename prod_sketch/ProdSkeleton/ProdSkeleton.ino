@@ -195,6 +195,10 @@ class ProtocolEngineIfImpl : public ProtocolEngineInterface {
     return can_tx_busy();
   }
 
+  void Reboot() override {
+    HAL_NVIC_SystemReset();
+  }
+
 } global_impl;
 
 ProtocolEngine engine;
