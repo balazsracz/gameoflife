@@ -38,8 +38,10 @@ public:
     kStateOr = 0xF5,
     // Listen for a local signal and set the coordinates. x,y are the new coordinates. arg unused. Sent by the master.
     kLocalAssign = 0xF2,
-    // Reports that the local signal was received, and coordinates are now assigned. x,y are the new coordinates. Arg unused. Sent by the node.
+    // Reports that the local signal was received, and coordinates are now assigned. x,y are the new coordinates. Arg unused. Sent by the node. This might be not matching the coordinates in kLocalAssign if there is a coordinate conflict.
     kLocalFound = 0xF3,
+    // Reports that there are conflicting coordinates from a local assign. x,y are the old coordinates (which stay in effect). ArgX, ArgY are the new coordinates (that were not assigned). Sent by the node.
+    kLocalConflict = 0xF6,
     // Requests a local signal to be toggled. dir is the lowest two bits of the command. x,y are the target coordinate. Arg unused. Sent by the master.
     kToggleLocalSignal = 0xEC,
     // Reports who is our neighbor. x,y, are the source (reporting) node. argx-argy are the neighbor node. dir of the reporting node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the node.
@@ -91,6 +93,31 @@ public:
   static uint8_t GetArgY(uint64_t ev) {
     return (ev & kArgYMask) >> kArgYShift;
   }
+
+  // Helper functions for creating encoded events.
+
+  static constexpr uint64_t CreateEvent(Command cmd, uint8_t x, uint8_t y, uint16_t arg = 0) {
+    return kEventPrefix | (uint64_t(cmd) << kCmdShift) |          //
+           (uint64_t(x) << kXShift) | (uint64_t(y) << kYShift) |  //
+           (uint64_t(arg) << kArgShift);
+  }
+
+  static constexpr uint64_t CreateEvent(Command cmd, uint8_t x, uint8_t y, uint8_t argx, uint8_t argy) {
+    return kEventPrefix | (uint64_t(cmd) << kCmdShift) |          //
+           (uint64_t(x) << kXShift) | (uint64_t(y) << kYShift) |  //
+           (uint64_t(argx) << kArgXShift) | (uint64_t(argy) << kArgYShift);
+  }
+
+  static constexpr uint64_t CreateEvent(Command cmd, uint8_t x, uint8_t y, uint8_t argx, uint8_t argy, Direction d1) {
+    return CreateEvent(cmd, x, y, argx, argy) |  //
+           (uint64_t(d1) << kCmdShift);
+  }
+
+  static constexpr uint64_t CreateEvent(Command cmd, uint8_t x, uint8_t y, uint8_t argx, uint8_t argy, Direction d1, Direction d2) {
+    return CreateEvent(cmd, x, y, argx, argy) |  //
+           (uint64_t(d1) << kCmdShift) | (uint64_t(d2) << (kCmdShift + 2));
+  }
+
 
 private:
   // do not instantiate this class.

@@ -92,11 +92,11 @@ void CharlieApply(const CharlieProgram* pgm, const int* pins, bool* data, int id
 // ================= ^^^^ charlieplex handler ==============
 
 // ================== Global bus API ======================
-// Implement this function for handling events coming from the local bus.
+// Implement this function for handling events coming from the global bus.
 extern void OnGlobalEvent(uint64_t event);
 
 // Call this function to send a broadcast event to the global bus.
-extern void SendEvent(uint64_t event_id);
+extern bool SendEvent(uint64_t event_id);
 
 // Call this function once from setup().
 extern void GlobalBusSetup();
@@ -171,8 +171,8 @@ extern bool LocalBusIsActive(Direction dir);
 #include "protocol-engine.h"
 
 class ProtocolEngineIfImpl : public ProtocolEngineInterface {
-  void SendEvent(uint64_t event_id) override {
-    ::SendEvent(event_id);
+  bool SendEvent(uint64_t event_id) override {
+    return ::SendEvent(event_id);
   }
 
   // @return the currently used alias of the local node.
@@ -189,6 +189,10 @@ class ProtocolEngineIfImpl : public ProtocolEngineInterface {
 
   uint32_t millis() override {
     return HAL_GetTick();
+  }
+
+  bool TxPending() override {
+    return can_tx_busy();
   }
 
 } global_impl;

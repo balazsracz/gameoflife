@@ -4,7 +4,8 @@ class ProtocolEngineInterface {
 public:
   // Sends an event to the bus.
   // @param event_id the 64-bit payload of the event to send.
-  virtual void SendEvent(uint64_t event_id) = 0;
+  // @return true if the message was sent, false if it was dropped.
+  virtual bool SendEvent(uint64_t event_id) = 0;
 
   // @return the currently used alias of the local node.
   virtual uint16_t GetAlias() = 0;
@@ -14,6 +15,9 @@ public:
 
   // @return the current time.
   virtual uint32_t millis() = 0;
+
+  // @return true if there is a pending send.
+  virtual bool TxPending() = 0;
 };  // class ProtocolEngineInterface
 
 class ProtocolEngine {
@@ -33,7 +37,7 @@ public:
     if (iface_->millis() >= timeout_) {
       HandleTimeout();
     }
-    if (pending_x_ != 0xff && pending_y_ != 0xff) {
+    if (pending_x_ != INVALID_COORD && pending_y_ != INVALID_COORD) {
       LookForLocalSignal();
     }
   }
@@ -56,8 +60,8 @@ public:
         }
       case Defs::kLocalFound:
         {
-          pending_x_ = 0xff;
-          pending_y_ = 0xff;
+          pending_x_ = INVALID_COORD;
+          pending_y_ = INVALID_COORD;
           // If we are sending a signal right now.
           if (to_cancel_local_signal_) {
             CancelLocalSignal();
@@ -96,10 +100,10 @@ private:
   // Restores the internal state to a fresh boot.
   void InitState() {
     to_cancel_local_signal_ = false;
-    my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y = 0xff;
+    my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
     timeout_ = INVALID_TIMEOUT;
     neighbors_.clear();
-
+    neighbors_.resize(4);  // number of directions
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -113,49 +117,69 @@ private:
 
   // Stops emitting a local signal to all directions.
   void CancelLocalSignal() {
-    iface_->LocalBusSignal(Defs::kNorth, false);
-    iface_->LocalBusSignal(Defs::kSouth, false);
-    iface_->LocalBusSignal(Defs::kEast, false);
-    iface_->LocalBusSignal(Defs::kWest, false);
+    for (auto dir : { kNorth, kEast, kSouth, kWest }) {
+      iface_->LocalBusSignal(dir, false);
+    }
   }
 
   // Called from the loop when the timeout expires.
   void HandleTimeout() {
     timeout_ = INVALID_TIMEOUT;
-    if (cancel_local_signal_) {
+    if (to_cancel_local_signal_) {
       CancelLocalSignal();
-      cancel_local_signal_ = false;
+      to_cancel_local_signal_ = false;
     }
   }
 
-  // Called when there is an active neighbor search declared on the bus.
+  // Called from Loop() when there is an active neighbor search declared on the bus.
   void LookForLocalSignal() {
-    if (iface_->LocalBusIsActive(Defs::kNorth)) {
+    bool found = false;
+    for (auto dir : { kNorth, kEast, kSouth, kWest }) {
+      if (iface_->LocalBusIsActive(dir)) {
+        if (my_x_ == INVALID_COORD || my_y_ == INVALID_COORD) {
+          my_x_ = pending_x_;
+          my_y_ = pending_y_;
+        }
+        // We are the targeted neighbor. Report this.
+        iface_->SendEvent(Defs::CreateEvent(Defs::kLocalFound, my_x_, my_y_));
+        found = true;
+        if (my_x_ != pending_x_ || my_y_ != pending_y_) {
+          // Error: we have to different set of coordinates.
+          iface_->SendEvent(Defs::CreateEvent(Defs::kLocalConflict, my_x_, my_y_, pending_x_, pending_y_));
+        }
+        // Records the neighbor in the links we know about.
+        neighbors_[dir].neigh_x = pending_neigh_x_;
+        neighbors_[dir].neigh_y = pending_neigh_y_;
+        neighbors_[dir].neigh_dir = pending_neigh_dir_;
+      }
+    }
+    if (found) {
+      pending_x_ = INVALID_COORD;
+      pending_y_ = INVALID_COORD;
     }
   }
 
   ProtocolEngineInterface* iface_;
 
+  static constexpr uint8_t INVALID_COORD = 0xff;
   // Coordinates to be assigned via a local signal. This is already adjusted from the neighbor with deltaxy.
-  uint8_t pending_x_{ 0xff };
-  uint8_t pending_y_{ 0xff };
+  uint8_t pending_x_{ INVALID_COORD };
+  uint8_t pending_y_{ INVALID_COORD };
 
   // Which neighbor was recently instructed to do a local trigger.
-  uint8_t pending_neigh_x_{ 0xff };
-  uint8_t pending_neigh_y_{ 0xff };
+  uint8_t pending_neigh_x_{ INVALID_COORD };
+  uint8_t pending_neigh_y_{ INVALID_COORD };
   // Which direction on the neighbor that was triggered.
   Direction pending_neigh_dir_;
 
   // My assigned coordinates.
-  uint8_t my_x_{ 0xff };
-  uint8_t my_y_{ 0xff };
+  uint8_t my_x_{ INVALID_COORD };
+  uint8_t my_y_{ INVALID_COORD };
 
   struct Link {
-    // Direction on my side
-    Direction my_dir;
     // Coordinates of the neighbor
-    uint8_t neigh_x;
-    uint8_t neigh_y;
+    uint8_t neigh_x{ INVALID_COORD };
+    uint8_t neigh_y{ INVALID_COORD };
     // Direction on the neighbor side
     Direction neigh_dir;
   };

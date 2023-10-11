@@ -7,8 +7,8 @@
 // @param src the sender of this event (12-bit unstable identifier)
 extern void OnGlobalEvent(uint64_t event, uint16_t src);
 
-// Call this function to send a broadcast event to the global bus.
-extern void SendEvent(uint64_t event_id);
+// Call this function to send a broadcast event to the global bus. @return true on success, false when the frame was dropped.
+extern bool SendEvent(uint64_t event_id);
 
 // Call this function once from setup().
 extern void GlobalBusSetup();
@@ -143,6 +143,10 @@ void GlobalBusSetup() {
   /* Activate filter and exit initialization mode. */
   CAN->FA1R = 0x000000001;
   CAN->FMR &= ~CAN_FMR_FINIT;
+}
+
+bool can_tx_busy() {
+  return (CAN->TSR & (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2)) != 0;
 }
 
 bool try_send_can_frame(const struct can_frame &can_frame) {
@@ -1556,7 +1560,7 @@ uint64_t nmranet_nodeid() {
   return 0x050101011470;
 }
 
-void SendEvent(uint64_t ev) {
+bool SendEvent(uint64_t ev) {
   struct can_frame f;
   SET_CAN_FRAME_ID_EFF(f, 0x195b4000 | openlcb::state_.alias);
   ev = __builtin_bswap64(ev);
@@ -1564,7 +1568,9 @@ void SendEvent(uint64_t ev) {
   f.can_dlc = 8;
   if (!try_send_can_frame(f)) {
     SerialUSB.printf("error sending CAN frame.\n");
+    return false;
   }
+  return true;
 }
 
 void GlobalBusLoop() {
