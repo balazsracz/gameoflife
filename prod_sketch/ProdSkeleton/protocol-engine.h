@@ -66,20 +66,6 @@ public:
       // Let's trigger a leader election.
       ParticipateLeaderElection();
     }
-    if (!need_init_done_ && to_leader_election_ && millis >= idle_timeout_) {
-      // Leader election complete.
-      to_leader_election_ = false;
-      idle_timeout_ = millis + 10;
-      iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
-      if (leader_alias_ == iface_->GetAlias()) {
-        is_leader_ = true;
-        seen_leader_ = true;
-        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
-        SerialUSB.printf("I am leader %03x\n", leader_alias_);
-      } else {
-        SerialUSB.printf("Leader is %03x\n", leader_alias_);
-      }
-    }
   }
 
   // Call this function when a global event arrives.
@@ -158,6 +144,10 @@ private:
         next_neighbor_report_ = 0;
         return;
       case Defs::kIAmLeader:
+        if (is_leader_) {
+          SerialUSB.printf("Seen conflicting leader me=%03x known=%03x other=%03x", iface_->GetAlias(), leader_alias_, src);
+          is_leader_ = false;
+        }
         seen_leader_ = true;
         to_leader_election_ = false;
         leader_alias_ = src;
@@ -173,8 +163,10 @@ private:
           leader_alias_ = src;
         }
         if (!seen_leader_ && !to_leader_election_) {
+          // Someone else started a leader election.
           ParticipateLeaderElection();
         }
+        SetElectionTimeout();
         break;
     }
   }
@@ -185,6 +177,20 @@ private:
     if (to_cancel_local_signal_) {
       CancelLocalSignal();
       to_cancel_local_signal_ = false;
+    }
+    if (to_leader_election_) {
+      // Leader election complete.
+      to_leader_election_ = false;
+      idle_timeout_ = iface_->millis() + 10;
+      iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
+      if (leader_alias_ == iface_->GetAlias()) {
+        is_leader_ = true;
+        seen_leader_ = true;
+        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
+        SerialUSB.printf("I am leader %03x\n", leader_alias_);
+      } else {
+        SerialUSB.printf("Leader is %03x\n", leader_alias_);
+      }
     }
   }
 
@@ -216,14 +222,18 @@ private:
     return Defs::GetX(ev) == my_x_ && Defs::GetY(ev) == my_y_;
   }
 
+  // Sends an event to the bus to participate in leader election.
   void ParticipateLeaderElection() {
     iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeLeader));
     leader_alias_ = std::min(iface_->GetAlias(), leader_alias_);
-    to_leader_election_ = true;
-    idle_timeout_ = iface_->millis() + 10;
+    SetElectionTimeout();
   }
 
-
+  // Sets the timeout to the idle delay from this leader election message.
+  void SetElectionTimeout() {
+    to_leader_election_ = true;
+    timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
+  }
 
   // Stops emitting a local signal to all directions.
   void CancelLocalSignal() {
