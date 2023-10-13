@@ -62,16 +62,13 @@ public:
       need_init_done_ = false;
       idle_timeout_ = millis + 10;
     }
-    if (!need_init_done_ && !seen_leader_ && !pending_leader_ && millis >= idle_timeout_) {
+    if (!need_init_done_ && !seen_leader_ && !to_leader_election_ && millis >= idle_timeout_) {
       // Let's trigger a leader election.
-      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeLeader));
-      leader_alias_ = iface_->GetAlias();
-      pending_leader_ = true;
-      idle_timeout_ = millis + 10;
+      ParticipateLeaderElection();
     }
-    if (!need_init_done_ && pending_leader_ && millis >= idle_timeout_) {
+    if (!need_init_done_ && to_leader_election_ && millis >= idle_timeout_) {
       // Leader election complete.
-      pending_leader_ = false;
+      to_leader_election_ = false;
       idle_timeout_ = millis + 10;
       iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
       if (leader_alias_ == iface_->GetAlias()) {
@@ -144,6 +141,7 @@ private:
   // Restores the internal state to a fresh boot.
   void InitState() {
     to_cancel_local_signal_ = false;
+    to_leader_election_ = false;
     next_neighbor_report_ = INVALID_DIR;
     my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
     timeout_ = INVALID_TIMEOUT;
@@ -152,7 +150,6 @@ private:
     neighbors_.resize(4);  // number of directions
     need_init_done_ = true;
     seen_leader_ = false;
-    pending_leader_ = false;
     is_leader_ = false;
     leader_alias_ = 0xF000;
   }
@@ -160,6 +157,13 @@ private:
   // @return true if this event is targeting me in the x/y parameters.
   bool ForMe(uint64_t ev) {
     return Defs::GetX(ev) == my_x_ && Defs::GetY(ev) == my_y_;
+  }
+
+  void ParticipateLeaderElection() {
+    iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeLeader));
+    leader_alias_ = std::min(iface_->GetAlias(), leader_alias_);
+    to_leader_election_ = true;
+    idle_timeout_ = iface_->millis() + 10;
   }
 
   // Called by the event handler when a global command event arrives.
@@ -177,7 +181,11 @@ private:
         if (src == leader_alias_) {
           // Lost the leader.
           seen_leader_ = false;
+          leader_alias_ = 0xF000;
         } else if (is_leader_) {
+          // Tell the new node that we are the leader.
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
+
           /// @todo need to trigger neighbor discovery protocol.
         }
         return;
@@ -187,20 +195,22 @@ private:
         return;
       case Defs::kIAmLeader:
         seen_leader_ = true;
-        pending_leader_ = false;
+        to_leader_election_ = false;
         leader_alias_ = src;
         return;
       case Defs::kProposeLeader:
         if (is_leader_) {
           // debunk
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
-          pending_leader_ = false;
+          to_leader_election_ = false;
           return;
         }
         if (src < leader_alias_) {
           leader_alias_ = src;
         }
-        pending_leader_ = true;
+        if (!seen_leader_ && !to_leader_election_) {
+          ParticipateLeaderElection();
+        }
         break;
     }
   }
@@ -294,11 +304,10 @@ private:
   bool need_init_done_ : 1;
   // true if we've seen a leader node.
   bool seen_leader_ : 1;
-  // true if we are in leader election.
-  bool pending_leader_ : 1;
   // true if this node is the leader.
   bool is_leader_ : 1;
 
   // to_*: what to do when we are done with the timeout.
   bool to_cancel_local_signal_ : 1;
+  bool to_leader_election_ : 1;
 };  // class ProtocolEngine
