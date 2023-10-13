@@ -1565,6 +1565,8 @@ uint64_t nmranet_nodeid() {
 
 bool SendEvent(uint64_t ev) {
   struct can_frame f;
+  memset (&f, 0, sizeof(f));
+  SET_CAN_FRAME_EFF(f);
   SET_CAN_FRAME_ID_EFF(f, 0x195b4000 | openlcb::state_.alias);
   ev = __builtin_bswap64(ev);
   memcpy(f.data, &ev, 8);
