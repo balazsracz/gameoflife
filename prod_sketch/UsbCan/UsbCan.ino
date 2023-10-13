@@ -51,6 +51,10 @@
 /// matches the pinout of the OpenLCB Dev Kit daughterboard.
 #define CAN_RX_PIN PB_8
 
+// These two pins have an LED on them. The LED will light when you write LOW to the respective pin.
+static constexpr int kLed13Pin = PF0;
+static constexpr int kLed14Pin = PF1;
+
 Stm32Can Can("/dev/can0");
 
 OVERRIDE_CONST_TRUE(gc_generate_newlines);
@@ -72,6 +76,10 @@ void fixOD() {
 
 /// Arduino setup routine. Initializes the CAN-bus and the serial port.
 void setup() {
+  pinMode(kLed13Pin, OUTPUT);
+  pinMode(kLed14Pin, OUTPUT);
+  digitalWrite(kLed13Pin, HIGH);
+  digitalWrite(kLed14Pin, HIGH);  
   // Baud rate does not matter for USB ports.
   SERIAL_PORT.begin(115200);
   arduino_can_pinmap(CAN_TX_PIN, CAN_RX_PIN);
@@ -87,6 +95,18 @@ void setup() {
 /// Arduino loop routine. Calls the OpenMRN software to do its work.
 void loop() {
   openmrn_executor.loop_some();
+
+  // transmit busy LED.
+  digitalWrite(kLed14Pin, (CAN->TSR & (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2)) != 0 ? LOW : HIGH);
+  static uint32_t rx_led_timeout = 0;
+  if (Can.available()) {
+    // There is a CAN packet to read.
+    digitalWrite(kLed13Pin, LOW);
+    rx_led_timeout = HAL_GetTick() + 2;
+  }
   can_bridge->run();
+  if (HAL_GetTick() > rx_led_timeout) {
+    digitalWrite(kLed13Pin, HIGH);
+  }
   serial_bridge->run();
 }
