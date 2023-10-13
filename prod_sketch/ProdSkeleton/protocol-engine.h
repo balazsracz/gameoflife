@@ -27,13 +27,13 @@ public:
 class ProtocolEngine {
 public:
   ProtocolEngine() {
-    InitState();
   }
 
   // Call this function once from setup().
   // @param iface implementation object proxying a variety of functions to the global state machines. Ownership is NOT transferred.
   void Setup(ProtocolEngineInterface* iface) {
     iface_ = iface;
+    InitState();
   }
 
   // Call this function from the loop() handler.
