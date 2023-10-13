@@ -62,20 +62,21 @@ public:
       need_init_done_ = false;
       idle_timeout_ = millis + 10;
     }
-    if (!seen_master_ && millis >= idle_timeout_) {
+    if (!need_init_done_ && !seen_master_ && !pending_master_ && millis >= idle_timeout_) {
       // Let's trigger a master election.
       iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeMaster));
       master_alias_ = iface_->GetAlias();
       pending_master_ = true;
       idle_timeout_ = millis + 10;
     }
-    if (pending_master_ && millis >= idle_timeout_) {
+    if (!need_init_done_ && pending_master_ && millis >= idle_timeout_) {
       // Master election complete.
       pending_master_ = false;
       idle_timeout_ = millis + 10;
       iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareMaster, 0, 0, master_alias_));
       if (master_alias_ == iface_->GetAlias()) {
         is_master_ = true;
+        seen_master_ = true;
         iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmMaster));
         SerialUSB.printf("I am master %03x\n", master_alias_);
       } else {
@@ -172,6 +173,14 @@ private:
       case Defs::kReInit:
         InitState();
         return;
+      case Defs::kInitDone:
+        if (src == master_alias_) {
+          // Lost the master.
+          seen_master_ = false;
+        } else if (is_master_) {
+          /// @todo need to trigger neighbor discovery protocol.
+        }
+        return;
       case Defs::kReportNeighbors:
         // This will start the state machine in the Loop().
         next_neighbor_report_ = 0;
@@ -179,8 +188,14 @@ private:
       case Defs::kIAmMaster:
         seen_master_ = true;
         pending_master_ = false;
+        master_alias_ = src;
         return;
       case Defs::kProposeMaster:
+        if (is_master_) {
+          // debunk
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmMaster));
+          pending_master_ = false;
+        }
         if (src < master_alias_) {
           master_alias_ = src;
         }
