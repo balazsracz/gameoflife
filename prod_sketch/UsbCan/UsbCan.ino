@@ -92,6 +92,8 @@ void setup() {
       &SERIAL_PORT, &openmrn_can_hub));
 }
 
+static constexpr unsigned kRxLedBlinkLengthMsec = 10;
+
 /// Arduino loop routine. Calls the OpenMRN software to do its work.
 void loop() {
   openmrn_executor.loop_some();
@@ -99,11 +101,12 @@ void loop() {
   // transmit busy LED.
   static constexpr uint32_t kMailboxes = (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2);
   digitalWrite(kLed14Pin, (CAN->TSR & kMailboxes) != kMailboxes ? LOW : HIGH);
+
   static uint32_t rx_led_timeout = 0;
   if (Can.available()) {
     // There is a CAN packet to read.
     digitalWrite(kLed13Pin, LOW);
-    rx_led_timeout = HAL_GetTick() + 2;
+    rx_led_timeout = HAL_GetTick() + kRxLedBlinkLengthMsec;
   }
   can_bridge->run();
   if (HAL_GetTick() > rx_led_timeout) {
