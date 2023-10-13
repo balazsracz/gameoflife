@@ -145,7 +145,8 @@ void GlobalBusSetup() {
 }
 
 bool can_tx_busy() {
-  return (CAN->TSR & (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2)) != 0;
+  static constexpr uint32_t kMailboxes = (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2);
+  return (CAN->TSR & kMailboxes) != kMailboxes;
 }
 
 bool try_send_can_frame(const struct can_frame &can_frame) {

@@ -97,7 +97,8 @@ void loop() {
   openmrn_executor.loop_some();
 
   // transmit busy LED.
-  digitalWrite(kLed14Pin, (CAN->TSR & (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2)) != 0 ? LOW : HIGH);
+  static constexpr uint32_t kMailboxes = (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2);
+  digitalWrite(kLed14Pin, (CAN->TSR & kMailboxes) != kMailboxes ? LOW : HIGH);
   static uint32_t rx_led_timeout = 0;
   if (Can.available()) {
     // There is a CAN packet to read.
