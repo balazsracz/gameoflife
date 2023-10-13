@@ -195,6 +195,7 @@ private:
           // debunk
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
           pending_leader_ = false;
+          return;
         }
         if (src < leader_alias_) {
           leader_alias_ = src;
