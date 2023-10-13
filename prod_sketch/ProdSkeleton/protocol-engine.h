@@ -129,43 +129,7 @@ public:
     }
   }
 
-
 private:
-  using Defs = ProtocolDefs;
-
-  // Indexed with a Direction, delta x coordinate.
-  static constexpr const int deltax[4] = { 0, 1, 0, -1 };
-  // Indexed with a Direction, delta y coordinate.
-  static constexpr const int deltay[4] = { 1, 0, -1, 0 };
-
-  // Restores the internal state to a fresh boot.
-  void InitState() {
-    to_cancel_local_signal_ = false;
-    to_leader_election_ = false;
-    next_neighbor_report_ = INVALID_DIR;
-    my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
-    timeout_ = INVALID_TIMEOUT;
-    idle_timeout_ = iface_->millis() + 10;
-    neighbors_.clear();
-    neighbors_.resize(4);  // number of directions
-    need_init_done_ = true;
-    seen_leader_ = false;
-    is_leader_ = false;
-    leader_alias_ = 0xF000;
-  }
-
-  // @return true if this event is targeting me in the x/y parameters.
-  bool ForMe(uint64_t ev) {
-    return Defs::GetX(ev) == my_x_ && Defs::GetY(ev) == my_y_;
-  }
-
-  void ParticipateLeaderElection() {
-    iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeLeader));
-    leader_alias_ = std::min(iface_->GetAlias(), leader_alias_);
-    to_leader_election_ = true;
-    idle_timeout_ = iface_->millis() + 10;
-  }
-
   // Called by the event handler when a global command event arrives.
   // @param arg the lowest bits of the event id (determine what to do).
   void HandleGlobalCommand(uint16_t arg, uint16_t src) {
@@ -215,13 +179,6 @@ private:
     }
   }
 
-  // Stops emitting a local signal to all directions.
-  void CancelLocalSignal() {
-    for (auto dir : { kNorth, kEast, kSouth, kWest }) {
-      iface_->LocalBusSignal(dir, false);
-    }
-  }
-
   // Called from the loop when the timeout expires.
   void HandleTimeout() {
     timeout_ = INVALID_TIMEOUT;
@@ -230,6 +187,52 @@ private:
       to_cancel_local_signal_ = false;
     }
   }
+
+  using Defs = ProtocolDefs;
+
+  // Indexed with a Direction, delta x coordinate.
+  static constexpr const int deltax[4] = { 0, 1, 0, -1 };
+  // Indexed with a Direction, delta y coordinate.
+  static constexpr const int deltay[4] = { 1, 0, -1, 0 };
+
+  // Restores the internal state to a fresh boot.
+  void InitState() {
+    to_cancel_local_signal_ = false;
+    to_leader_election_ = false;
+    next_neighbor_report_ = INVALID_DIR;
+    my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
+    timeout_ = INVALID_TIMEOUT;
+    idle_timeout_ = iface_->millis() + 10;
+    neighbors_.clear();
+    neighbors_.resize(4);  // number of directions
+    need_init_done_ = true;
+    seen_leader_ = false;
+    is_leader_ = false;
+    leader_alias_ = 0xF000;
+  }
+
+  // @return true if this event is targeting me in the x/y parameters.
+  bool ForMe(uint64_t ev) {
+    return Defs::GetX(ev) == my_x_ && Defs::GetY(ev) == my_y_;
+  }
+
+  void ParticipateLeaderElection() {
+    iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeLeader));
+    leader_alias_ = std::min(iface_->GetAlias(), leader_alias_);
+    to_leader_election_ = true;
+    idle_timeout_ = iface_->millis() + 10;
+  }
+
+
+
+  // Stops emitting a local signal to all directions.
+  void CancelLocalSignal() {
+    for (auto dir : { kNorth, kEast, kSouth, kWest }) {
+      iface_->LocalBusSignal(dir, false);
+    }
+  }
+
+
 
   // Called from Loop() when there is an active neighbor search declared on the bus.
   void LookForLocalSignal() {
