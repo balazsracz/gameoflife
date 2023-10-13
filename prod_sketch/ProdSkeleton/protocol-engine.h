@@ -62,25 +62,25 @@ public:
       need_init_done_ = false;
       idle_timeout_ = millis + 10;
     }
-    if (!need_init_done_ && !seen_master_ && !pending_master_ && millis >= idle_timeout_) {
-      // Let's trigger a master election.
-      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeMaster));
-      master_alias_ = iface_->GetAlias();
-      pending_master_ = true;
+    if (!need_init_done_ && !seen_leader_ && !pending_leader_ && millis >= idle_timeout_) {
+      // Let's trigger a leader election.
+      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kProposeLeader));
+      leader_alias_ = iface_->GetAlias();
+      pending_leader_ = true;
       idle_timeout_ = millis + 10;
     }
-    if (!need_init_done_ && pending_master_ && millis >= idle_timeout_) {
-      // Master election complete.
-      pending_master_ = false;
+    if (!need_init_done_ && pending_leader_ && millis >= idle_timeout_) {
+      // Leader election complete.
+      pending_leader_ = false;
       idle_timeout_ = millis + 10;
-      iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareMaster, 0, 0, master_alias_));
-      if (master_alias_ == iface_->GetAlias()) {
-        is_master_ = true;
-        seen_master_ = true;
-        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmMaster));
-        SerialUSB.printf("I am master %03x\n", master_alias_);
+      iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
+      if (leader_alias_ == iface_->GetAlias()) {
+        is_leader_ = true;
+        seen_leader_ = true;
+        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
+        SerialUSB.printf("I am leader %03x\n", leader_alias_);
       } else {
-        SerialUSB.printf("Master is %03x\n", master_alias_);
+        SerialUSB.printf("Leader is %03x\n", leader_alias_);
       }
     }
   }
@@ -151,10 +151,10 @@ private:
     neighbors_.clear();
     neighbors_.resize(4);  // number of directions
     need_init_done_ = true;
-    seen_master_ = false;
-    pending_master_ = false;
-    is_master_ = false;
-    master_alias_ = 0xF000;
+    seen_leader_ = false;
+    pending_leader_ = false;
+    is_leader_ = false;
+    leader_alias_ = 0xF000;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -174,10 +174,10 @@ private:
         InitState();
         return;
       case Defs::kInitDone:
-        if (src == master_alias_) {
-          // Lost the master.
-          seen_master_ = false;
-        } else if (is_master_) {
+        if (src == leader_alias_) {
+          // Lost the leader.
+          seen_leader_ = false;
+        } else if (is_leader_) {
           /// @todo need to trigger neighbor discovery protocol.
         }
         return;
@@ -185,21 +185,21 @@ private:
         // This will start the state machine in the Loop().
         next_neighbor_report_ = 0;
         return;
-      case Defs::kIAmMaster:
-        seen_master_ = true;
-        pending_master_ = false;
-        master_alias_ = src;
+      case Defs::kIAmLeader:
+        seen_leader_ = true;
+        pending_leader_ = false;
+        leader_alias_ = src;
         return;
-      case Defs::kProposeMaster:
-        if (is_master_) {
+      case Defs::kProposeLeader:
+        if (is_leader_) {
           // debunk
-          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmMaster));
-          pending_master_ = false;
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
+          pending_leader_ = false;
         }
-        if (src < master_alias_) {
-          master_alias_ = src;
+        if (src < leader_alias_) {
+          leader_alias_ = src;
         }
-        pending_master_ = true;
+        pending_leader_ = true;
         break;
     }
   }
@@ -282,8 +282,8 @@ private:
   // millis() value when we should complete the current operation (marked by to_* variables)
   uint32_t timeout_{ INVALID_TIMEOUT };
 
-  // Smallest alias that we know can be a master.
-  uint16_t master_alias_;
+  // Smallest alias that we know can be a leader.
+  uint16_t leader_alias_;
 
   // This value in next_neighbor_report_ is invalid.
   static constexpr unsigned INVALID_DIR = 4;
@@ -291,12 +291,12 @@ private:
   unsigned next_neighbor_report_ : 3;
   // true if we have not yet sent out the init done event.
   bool need_init_done_ : 1;
-  // true if we've seen a master node.
-  bool seen_master_ : 1;
-  // true if we are in master election.
-  bool pending_master_ : 1;
-  // true if this node is the master.
-  bool is_master_ : 1;
+  // true if we've seen a leader node.
+  bool seen_leader_ : 1;
+  // true if we are in leader election.
+  bool pending_leader_ : 1;
+  // true if this node is the leader.
+  bool is_leader_ : 1;
 
   // to_*: what to do when we are done with the timeout.
   bool to_cancel_local_signal_ : 1;

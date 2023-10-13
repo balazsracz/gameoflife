@@ -36,19 +36,19 @@ public:
     kStateSet = 0xF4,
     // Modifies the state of a node by adding certain cells (with an OR operator). x,y defines the node. arg is 16-bit for the bits to set in the node's state. Sent by an external configuring agent.
     kStateOr = 0xF5,
-    // Listen for a local signal and set the coordinates. x,y are the new coordinates. arg unused. Sent by the master.
+    // Listen for a local signal and set the coordinates. x,y are the new coordinates. arg unused. Sent by the leader.
     kLocalAssign = 0xF2,
     // Reports that the local signal was received, and coordinates are now assigned. x,y are the new coordinates. Arg unused. Sent by the node. This might be not matching the coordinates in kLocalAssign if there is a coordinate conflict.
     kLocalFound = 0xF3,
     // Reports that there are conflicting coordinates from a local assign. x,y are the old coordinates (which stay in effect). ArgX, ArgY are the new coordinates (that were not assigned). Sent by the node.
     kLocalConflict = 0xF6,
-    // Reports who the master is (according to the sender as an observer). x,y are unused, arg is the alias of the master.
-    kDeclareMaster = 0xF7,
-    // Requests a local signal to be toggled. dir is the lowest two bits of the command. x,y are the target coordinate. Arg unused. Sent by the master.
+    // Reports who the leader is (according to the sender as an observer). x,y are unused, arg is the alias of the leader.
+    kDeclareLeader = 0xF7,
+    // Requests a local signal to be toggled. dir is the lowest two bits of the command. x,y are the target coordinate. Arg unused. Sent by the leader.
     kToggleLocalSignal = 0xEC,
     // Reports who is our neighbor. x,y, are the source (reporting) node. argx-argy are the neighbor node. dir of the reporting node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the node.
     kReportNeighbor = 0xD0,
-    // Sets who is our neighbor. x,y, are the target node (to change). argx-argy are the neighbor node. dir of the target node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the master.
+    // Sets who is our neighbor. x,y, are the target node (to change). argx-argy are the neighbor node. dir of the target node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the leader.
     kSetNeighbor = 0xC0,
 
     // These commands have no argument in the cmd byte.
@@ -72,10 +72,10 @@ public:
     kReportNeighbors = 3,
     // Reports a freshly initialized node.
     kInitDone = 4,
-    // Reports that the sender is the master.
-    kIAmMaster = 5,
-    // Start master election; I can be master.
-    kProposeMaster = 6,
+    // Reports that the sender is the leader.
+    kIAmLeader = 5,
+    // Start leader election; I can be leader.
+    kProposeLeader = 6,
   };
 
   // Extract the command from an event.
