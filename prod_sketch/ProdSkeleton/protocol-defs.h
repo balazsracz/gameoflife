@@ -46,6 +46,8 @@ public:
     kLocalConflict = 0xF6,
     // Reports who the leader is (according to the sender as an observer). x,y are unused, arg is the alias of the leader.
     kDeclareLeader = 0xF7,
+    // Found an unannounced local signal. x,y are the source node that found this, arg unused.
+    kLocalSpurious = 0xF8,
     // Requests a local signal to be toggled. dir is the lowest two bits of the command. x,y are the target coordinate. Arg unused. Sent by the leader.
     kToggleLocalSignal = 0xEC,
     // Reports who is our neighbor. x,y, are the source (reporting) node. argx-argy are the neighbor node. dir of the reporting node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the node.
@@ -78,6 +80,8 @@ public:
     kIAmLeader = 5,
     // Start leader election; I can be leader.
     kProposeLeader = 6,
+    // Triggers all unassigned nodes to flip all their local lines.
+    kLocalToggleUnassigned = 8,
   };
 
   // Extract the command from an event.

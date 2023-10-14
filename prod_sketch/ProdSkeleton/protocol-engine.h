@@ -44,7 +44,8 @@ public:
     if (millis >= timeout_) {
       HandleTimeout();
     }
-    if (pending_x_ != INVALID_COORD && pending_y_ != INVALID_COORD) {
+    //if (pending_x_ != INVALID_COORD && pending_y_ != INVALID_COORD) {
+    {
       LookForLocalSignal();
     }
     if (next_neighbor_report_ < INVALID_DIR && !iface_->TxPending()) {
@@ -70,7 +71,20 @@ public:
     }
     if (need_full_discovery_ && !iface_->TxPending()) {
       need_full_discovery_ = false;
+      need_catchup_discovery_ = false;
       SetupFullDiscovery();
+    }
+    if (need_catchup_discovery_ && discovery_done_ && millis >= idle_timeout_) {
+      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kLocalToggleUnassigned));
+      disc_catchup_pending_ = true;
+      need_catchup_discovery_ = false;
+      idle_timeout_ = millis + 10;
+    }
+    if (disc_catchup_pending_ && disq_.empty() && millis >= idle_timeout_) {
+      // We did not get any neighbor reports usable for partial discovery. Let's do a full discovery.
+      disc_catchup_pending_ = false;
+      need_full_discovery_ = true;
+      need_catchup_discovery_ = false;
     }
     if (!disq_.empty()) {
       HandleDiscovery();
@@ -116,7 +130,7 @@ public:
         {
           Direction dir = Defs::GetDir(ev);
           if (ForMe(ev)) {
-            timeout_ = iface_->millis() + 2;
+            timeout_ = iface_->millis() + kLocalBusSignalTimeoutMsec;
             iface_->LocalBusSignal(dir, true);
             to_cancel_local_signal_ = true;
           } else {
@@ -126,6 +140,14 @@ public:
             pending_neigh_y_ = Defs::GetY(ev);
           }
           break;
+        }
+      case Defs::kLocalSpurious:
+        {
+          if (!disc_catchup_pending_) return;
+          auto x = Defs::GetX(ev);
+          auto y = Defs::GetY(ev);
+          disq_.push(GetCoord(x, y));
+          return;
         }
     }
   }
@@ -150,8 +172,7 @@ private:
         } else if (is_leader_) {
           // Tell the new node that we are the leader.
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
-
-          /// @todo need to trigger neighbor discovery protocol.
+          need_catchup_discovery_ = true;
         }
         return;
       case Defs::kReportNeighbors:
@@ -183,6 +204,15 @@ private:
         }
         SetElectionTimeout();
         break;
+      case Defs::kLocalToggleUnassigned:
+        if (my_x_ == INVALID_COORD && my_y_ == INVALID_COORD) {
+          timeout_ = iface_->millis() + kLocalBusSignalTimeoutMsec;
+          for (auto dir : { kNorth, kEast, kSouth, kWest }) {
+            iface_->LocalBusSignal(dir, true);
+          }
+          to_cancel_local_signal_ = true;
+        }
+        return;
     }
   }
 
@@ -212,12 +242,13 @@ private:
 
   using Defs = ProtocolDefs;
 
-  // Indexed with a Direction, delta x coordinate.
+  // Indexed with a Direction (N,E,S,W), delta x coordinate.
   static constexpr const int deltax[4] = { 0, 1, 0, -1 };
   // Indexed with a Direction, delta y coordinate.
-  static constexpr const int deltay[4] = { 1, 0, -1, 0 };
+  static constexpr const int deltay[4] = { -1, 0, 1, 0 };
 
   static constexpr unsigned kLocalNeighborLookupTimeoutMsec = 8;
+  static constexpr unsigned kLocalBusSignalTimeoutMsec = 4;
 
   // Restores the internal state to a fresh boot.
   void InitState() {
@@ -234,8 +265,11 @@ private:
     seen_leader_ = false;
     is_leader_ = false;
     leader_alias_ = 0xF000;
+    known_local_signal_ = 0;
     need_catchup_discovery_ = false;
     need_full_discovery_ = false;
+    disc_catchup_pending_ = false;
+    disc_startup_pending_ = false;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -277,6 +311,9 @@ private:
     auto ev = Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kReInit);
     iface_->SendEvent(ev);
     disc_startup_pending_ = true;
+    disc_catchup_pending_ = false;
+    need_catchup_discovery_ = false;
+    need_full_discovery_ = false;
 
     // Setup local address.
     my_x_ = 0x80;
@@ -313,10 +350,16 @@ private:
       to_disc_neighbor_lookup_ = false;
       // Nothing else to do, the state machine will continue below.
     }
-    if (disc_startup_pending_ && iface_->millis() < idle_timeout_) {
+    if ((disc_startup_pending_ || disc_catchup_pending_) && iface_->millis() < idle_timeout_) {
       return;
     }
-    disc_startup_pending_ = false;
+    if (disc_startup_pending_) {
+      disc_startup_pending_ = false;
+      need_catchup_discovery_ = false;
+    }
+    if (disc_catchup_pending_) {
+      disc_catchup_pending_ = false;
+    }
     ++discovery_state_;
     if (discovery_state_ > kMaxDirection) {
       // This entry is done.
@@ -343,7 +386,22 @@ private:
   void LookForLocalSignal() {
     bool found = false;
     for (auto dir : { kNorth, kEast, kSouth, kWest }) {
+      unsigned dir_bit = 1u << (unsigned)dir;
       if (iface_->LocalBusIsActive(dir)) {
+        if (pending_x_ == INVALID_COORD && pending_y_ == INVALID_COORD) {
+          if ((known_local_signal_ & dir_bit) == 0 && !to_cancel_local_signal_) {
+            // Not sure what they want to assign.
+            if (my_x_ != INVALID_COORD && my_y_ != INVALID_COORD) {
+              iface_->SendEvent(Defs::CreateEvent(Defs::kLocalSpurious, my_x_, my_y_));
+            }
+          }
+          known_local_signal_ |= dir_bit;
+          continue;
+        }
+        known_local_signal_ |= dir_bit;
+        if (to_cancel_local_signal_) {  // might be our signal
+          continue;
+        }
         if (my_x_ == INVALID_COORD || my_y_ == INVALID_COORD) {
           my_x_ = pending_x_;
           my_y_ = pending_y_;
@@ -359,6 +417,8 @@ private:
         neighbors_[dir].neigh_x = pending_neigh_x_;
         neighbors_[dir].neigh_y = pending_neigh_y_;
         neighbors_[dir].neigh_dir = pending_neigh_dir_;
+      } else {
+        known_local_signal_ &= ~dir_bit;
       }
     }
     if (found) {
@@ -420,6 +480,8 @@ private:
   static constexpr unsigned INVALID_DIR = 4;
   // If this is 0..3, then a neighbor report needs to be emitted.
   unsigned next_neighbor_report_ : 3;
+  // Which directions have a local signal active right now. Used for edge detection.
+  unsigned known_local_signal_ : 4;
   // true if we have not yet sent out the init done event.
   bool need_init_done_ : 1;
   // true if we've seen a leader node.
@@ -445,6 +507,9 @@ private:
   bool disc_tx2_pending_ : 1;
   // True if we sent out the reinitialize command but have not yet gotten all responses back.
   bool disc_startup_pending_ : 1;
+  // True if we sent out the toggle neighbors command at the beginning of a catchup discovery, but have not yet gotten all responses back.
+  bool disc_catchup_pending_ : 1;
+
   // Last direction we queried for the node in the head of the queue. -1 .. 3.
   int discovery_state_ : 4;
   // Timeout used for discovery operations.

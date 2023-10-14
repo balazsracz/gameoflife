@@ -234,10 +234,10 @@ void loop() {
   digitalWrite(kLed13Pin, !leds[13 - 1]);
   digitalWrite(kLed14Pin, !leds[14 - 1]);
 
-  LocalBusSignal(kNorth, btn_row_active[0] && (btn_col_active[1] || btn_col_active[2]));
-  LocalBusSignal(kSouth, btn_row_active[3] && (btn_col_active[1] || btn_col_active[2]));
-  LocalBusSignal(kWest, btn_col_active[0] && (btn_row_active[1] || btn_row_active[2]));
-  LocalBusSignal(kEast, btn_col_active[3] && (btn_row_active[1] || btn_row_active[2]));
+  //LocalBusSignal(kNorth, btn_row_active[0] && (btn_col_active[1] || btn_col_active[2]));
+  //LocalBusSignal(kSouth, btn_row_active[3] && (btn_col_active[1] || btn_col_active[2]));
+  //LocalBusSignal(kWest, btn_col_active[0] && (btn_row_active[1] || btn_row_active[2]));
+  //LocalBusSignal(kEast, btn_col_active[3] && (btn_row_active[1] || btn_row_active[2]));
 
   leds[4] = LocalBusIsActive(kWest);
   leds[11] = LocalBusIsActive(kEast);
