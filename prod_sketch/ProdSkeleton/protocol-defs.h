@@ -8,6 +8,8 @@ enum Direction : uint8_t {
   kWest = 3
 };
 
+static constexpr int kMaxDirection = (int)kWest;
+
 struct ProtocolDefs {
 public:
   static constexpr uint64_t kEventPrefix = UINT64_C(0x09000D0000000000);

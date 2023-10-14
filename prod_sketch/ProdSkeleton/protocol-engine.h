@@ -1,5 +1,7 @@
-#include "USBSerial.h"
 #include "protocol-defs.h"
+
+#include <queue>
+#include <map>
 
 class ProtocolEngineInterface {
 public:
@@ -66,6 +68,13 @@ public:
       // Let's trigger a leader election.
       ParticipateLeaderElection();
     }
+    if (need_full_discovery_ && !iface_->TxPending()) {
+      need_full_discovery_ = false;
+      SetupFullDiscovery();
+    }
+    if (!disq_.empty()) {
+      HandleDiscovery();
+    }
   }
 
   // Call this function when a global event arrives.
@@ -87,14 +96,20 @@ public:
         }
       case Defs::kLocalFound:
         {
-          pending_x_ = INVALID_COORD;
-          pending_y_ = INVALID_COORD;
           // If we are sending a signal right now.
           if (to_cancel_local_signal_) {
             CancelLocalSignal();
             timeout_ = INVALID_TIMEOUT;
             to_cancel_local_signal_ = false;
           }
+          // Discovery event found
+          if (to_disc_neighbor_lookup_) {
+            to_disc_neighbor_lookup_ = false;
+            timeout_ = INVALID_TIMEOUT;
+            AddNodeToDiscovery(pending_x_, pending_y_, src);
+          }
+          pending_x_ = INVALID_COORD;
+          pending_y_ = INVALID_COORD;
           break;
         }
       case Defs::kToggleLocalSignal:
@@ -185,6 +200,7 @@ private:
       iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
       if (leader_alias_ == iface_->GetAlias()) {
         is_leader_ = true;
+        need_full_discovery_ = true;
         seen_leader_ = true;
         iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
         SerialUSB.printf("I am leader %03x\n", leader_alias_);
@@ -201,10 +217,13 @@ private:
   // Indexed with a Direction, delta y coordinate.
   static constexpr const int deltay[4] = { 1, 0, -1, 0 };
 
+  static constexpr unsigned kLocalNeighborLookupTimeoutMsec = 8;
+
   // Restores the internal state to a fresh boot.
   void InitState() {
     to_cancel_local_signal_ = false;
     to_leader_election_ = false;
+    to_disc_neighbor_lookup_ = false;
     next_neighbor_report_ = INVALID_DIR;
     my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
     timeout_ = INVALID_TIMEOUT;
@@ -215,6 +234,8 @@ private:
     seen_leader_ = false;
     is_leader_ = false;
     leader_alias_ = 0xF000;
+    need_catchup_discovery_ = false;
+    need_full_discovery_ = false;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -229,12 +250,6 @@ private:
     SetElectionTimeout();
   }
 
-  // Sets the timeout to the idle delay from this leader election message.
-  void SetElectionTimeout() {
-    to_leader_election_ = true;
-    timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
-  }
-
   // Stops emitting a local signal to all directions.
   void CancelLocalSignal() {
     for (auto dir : { kNorth, kEast, kSouth, kWest }) {
@@ -242,7 +257,87 @@ private:
     }
   }
 
+  // Sets the timeout to the idle delay from this leader election message.
+  void SetElectionTimeout() {
+    to_leader_election_ = true;
+    timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
+  }
 
+  // Executed by the leader only. Initializes the state machines for the discovery.
+  void SetupFullDiscovery() {
+    while (!disq_.empty()) { disq_.pop(); }
+    known_nodes_.clear();
+    discovery_state_ = -1;
+    to_disc_neighbor_lookup_ = false;
+    discovery_done_ = false;
+    disc_tx1_pending_ = false;
+    disc_tx2_pending_ = false;
+
+    // Requests everyone else to drop their state.
+    auto ev = Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kReInit);
+    iface_->SendEvent(ev);
+    disc_startup_pending_ = true;
+
+    // Setup local address.
+    my_x_ = 0x80;
+    my_y_ = 0x80;
+    ev = Defs::CreateEvent(Defs::kLocalFound, my_x_, my_y_);
+    iface_->SendEvent(ev);
+    AddNodeToDiscovery(my_x_, my_y_, iface_->GetAlias());
+  }
+
+  // Checks if a node is known or not. If not known, adds the node to known and enqueues it for neighbor discovery.
+  void AddNodeToDiscovery(uint8_t x, uint8_t y, uint16_t alias) {
+    NodeCoord nc = GetCoord(x, y);
+    NodeInfo ni{ .alias_ = alias };
+    if (known_nodes_.insert({ nc, ni }).second) {
+      // new node
+      disq_.push(nc);
+    }
+  }
+
+  void HandleDiscovery() {
+    if (disc_tx2_pending_ && !iface_->TxPending()) {
+      OnGlobalEvent(disc_ev2_, iface_->GetAlias());  // loopback
+      disc_tx2_pending_ = false;
+    }
+    if (disc_tx1_pending_ && !iface_->TxPending()) {
+      OnGlobalEvent(disc_ev1_, iface_->GetAlias());  // loopback
+      disc_tx1_pending_ = false;
+      disc_tx2_pending_ = true;
+      iface_->SendEvent(disc_ev2_);
+    }
+    if (to_disc_neighbor_lookup_) {
+      // work is pending
+      if (iface_->millis() < disc_timeout_) return;
+      to_disc_neighbor_lookup_ = false;
+      // Nothing else to do, the state machine will continue below.
+    }
+    if (disc_startup_pending_ && iface_->millis() < idle_timeout_) {
+      return;
+    }
+    disc_startup_pending_ = false;
+    ++discovery_state_;
+    if (discovery_state_ > kMaxDirection) {
+      // This entry is done.
+      disq_.pop();
+      discovery_state_ = 0;
+      if (disq_.empty()) {
+        discovery_done_ = true;
+        return;
+      }
+    }
+    uint8_t x = GetCoordX(disq_.front());
+    uint8_t y = GetCoordY(disq_.front());
+    uint8_t nx = x + deltax[discovery_state_];
+    uint8_t ny = y + deltay[discovery_state_];
+    to_disc_neighbor_lookup_ = true;
+    disc_timeout_ = iface_->millis() + kLocalNeighborLookupTimeoutMsec;
+    disc_ev1_ = Defs::CreateEvent(Defs::kLocalAssign, nx, ny);
+    disc_ev2_ = Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)discovery_state_);
+    disc_tx1_pending_ = true;
+    iface_->SendEvent(disc_ev1_);
+  }
 
   // Called from Loop() when there is an active neighbor search declared on the bus.
   void LookForLocalSignal() {
@@ -270,6 +365,18 @@ private:
       pending_x_ = INVALID_COORD;
       pending_y_ = INVALID_COORD;
     }
+  }
+
+  using NodeCoord = uint16_t;
+
+  static constexpr uint8_t GetCoordX(const NodeCoord& c) {
+    return c & 0xff;
+  }
+  static constexpr uint8_t GetCoordY(const NodeCoord& c) {
+    return (c >> 8) & 0xff;
+  }
+  static constexpr NodeCoord GetCoord(uint8_t x, uint8_t y) {
+    return (uint16_t(y) << 8) | x;
   }
 
   ProtocolEngineInterface* iface_;
@@ -323,4 +430,34 @@ private:
   // to_*: what to do when we are done with the timeout.
   bool to_cancel_local_signal_ : 1;
   bool to_leader_election_ : 1;
+  bool to_disc_neighbor_lookup_ : 1;
+
+  // ==== Leader-only state ====
+  // We've seen some nodes rebooting, do a discovery for them.
+  bool need_catchup_discovery_ : 1;
+  // We need to do a discovery from the beginning.
+  bool need_full_discovery_ : 1;
+  // True if the discovery has completed.
+  bool discovery_done_ : 1;
+  // True while the first discovery message is in the CAN transmit queue.
+  bool disc_tx1_pending_ : 1;
+  // True while the second discovery message is in the CAN transmit queue.
+  bool disc_tx2_pending_ : 1;
+  // True if we sent out the reinitialize command but have not yet gotten all responses back.
+  bool disc_startup_pending_ : 1;
+  // Last direction we queried for the node in the head of the queue. -1 .. 3.
+  int discovery_state_ : 4;
+  // Timeout used for discovery operations.
+  uint32_t disc_timeout_;
+  // These events are sent out for each quadrant discovery.
+  uint64_t disc_ev1_;
+  uint64_t disc_ev2_;
+
+  // Nodes that we need to go through neightbor discovery with.
+  std::queue<NodeCoord> disq_;
+  struct NodeInfo {
+    uint16_t alias_;
+  };
+  std::map<NodeCoord, NodeInfo> known_nodes_;
+
 };  // class ProtocolEngine
