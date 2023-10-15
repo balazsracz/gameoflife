@@ -160,6 +160,47 @@ public:
     return CreateEvent(kGlobalCmd, 0, 0, (uint16_t)arg);
   }
 
+  
+  // A segment is a sequence of 4 bits in the 16-bit argument describing the
+  // current state of a node. Rows can be segments, but also edges.
+  struct Segment {
+    // Bit number of the first bit in the segment. This means (1u << bit_num)
+    // is the bit that needs to be set in the uint16_t arg in order to indicate
+    // that the first bit in the segment is lit.
+    int8_t bit_num;
+    // The remaining bits are at bit_num + bit_stride, bit_num + 2 * bit_stride
+    // and bit_num + 3 * bit_stride.
+    int8_t bit_stride;
+  };
+
+  // These segments are indexed by rows from top to bottom, and describe the
+  // positions of the lights in the uint16_t encoding. Each row is
+  // left-to-right.
+  static constexpr const Segment kRowSegments[4] = {
+    // Row 0 (north; left-to-right)
+    {.bit_num = 0, .bit_stride = 1},
+    // Row 1 (upper middle row)
+    {.bit_num = 4, .bit_stride = 1},
+    // Row 2 (lower middle row)
+    {.bit_num = 8, .bit_stride = 1},
+    // Row 3 (south, left-to-right)
+    {.bit_num = 12, .bit_stride = 1},
+  };
+
+  // These segments are indexed by a Direction, and describe the respective
+  // edge, in a clockwise manner. This means that North is left-to-right, East
+  // is top-down, South is right-to-left, West is bottom-up.
+  static constexpr const Segment kEdgeSegments[4] = {
+    // North; left-to-right
+    {.bit_num = 0, .bit_stride = 1},
+    // East; top-down
+    {.bit_num = 3, .bit_stride = 4},
+    // South; right-to-left
+    {.bit_num = 15, .bit_stride = -1},
+    // West; bottom-up
+    {.bit_num = 12, .bit_stride = -4},
+  };
+  
 
 private:
   // do not instantiate this class.

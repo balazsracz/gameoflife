@@ -139,6 +139,13 @@ public:
           disq_.push(GetCoord(x, y));
           return;
         }
+      case Defs::kReportNeighbor:
+        for (auto dir : { kNorth, kEast, kSouth, kWest }) {
+          if (neighbors_[dir].neigh_x == Defs::GetX(ev) && neighbors_[dir].neigh_y == Defs::GetY(ev)) {
+            ProcessNeighborReport(dir, ev);
+          }
+        }
+        return;
     }
   }
 
@@ -171,6 +178,9 @@ private:
         pending_y_ = INVALID_COORD;
         // This will start the state machine in the Loop().
         next_neighbor_report_ = 0;
+        // Forgets all diagonal neighbors.
+        neighbors_.resize(4);
+        neighbors_.resize(8);
         return;
       case Defs::kIAmLeader:
         if (is_leader_) {
@@ -487,6 +497,53 @@ private:
       pending_x_ = INVALID_COORD;
       pending_y_ = INVALID_COORD;
     }
+  }
+
+  // Called when `ev` is a neighbor report coming from a node that we remember is our actual neighbor in direction `dir`.
+  void ProcessNeighborReport(Direction dir, uint64_t ev) {
+    // This is the edge of the neighbor cell that looks towards us.
+    Direction reverse_dir = neighbors_[dir].neigh_dir;
+    // This is the edge if we go there and turn left.
+    Direction left_dir = IncDir(reverse_dir);
+    // This is the edge if we go there and turn right.
+    Direction right_dir = DecDir(reverse_dir);
+    bool found = false;
+    Direction found_dir;
+    unsigned num_stride = 0;
+    if (left_dir == Defs::GetDir(ev)) {
+      // We found a diagonal.
+      found = true;
+      // +4 turns north to northwest.
+      found_dir = Direction(int(dir) + 4);
+      // We turned left, so we have the first bit of that edge. Opposite that will be the last bit of the neighbor.
+      num_stride = 3;
+    }
+    if (right_dir == Defs::GetDir(ev)) {
+      // We found a diagonal.
+      found = true;
+      // +4 +1 turns north to northeast.
+      found_dir = Direction(int(IncDir(dir)) + 4);
+      // We turned right, so we have the last bit of that edge. Opposite that will be the first bit of the neighbor.
+      num_stride = 0;
+    }
+    if (found) {
+      auto& l = neighbors_[found_dir];
+      l.neigh_x = Defs::GetArgX(ev);
+      l.neigh_y = Defs::GetArgY(ev);
+      // This is the direction on the diagonal neighbor that looks towards the neighbor.
+      l.neigh_dir = Defs::GetDir2(ev);
+      const auto& seg = Defs::kEdgeSegments[l.neigh_dir]; 
+      l.pixel_offset = seg.bit_num + num_stride * seg.bit_stride;
+    }
+  }
+
+  // Computes the clockwise next direction from a given direction. (N>E>S>W>N);
+  static Direction IncDir(Direction dir) {
+    return (Direction)((((int)dir) + 1) % 4);
+  }
+  // Computes the clockwise previous direction from a given direction. (N<E<S<W<N);
+  static Direction DecDir(Direction dir) {
+    return (Direction)((((int)dir) - 1) % 4);
   }
 
   using NodeCoord = uint16_t;
