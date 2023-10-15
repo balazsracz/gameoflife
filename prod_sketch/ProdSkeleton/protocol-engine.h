@@ -69,28 +69,6 @@ public:
       // Let's trigger a leader election.
       ParticipateLeaderElection();
     }
-#if 0
-    if (need_full_discovery_ && !iface_->TxPending()) {
-      need_full_discovery_ = false;
-      need_catchup_discovery_ = false;
-      SetupFullDiscovery();
-    }
-    if (need_catchup_discovery_ && discovery_done_ && millis >= idle_timeout_) {
-      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kLocalToggleUnassigned));
-      disc_catchup_pending_ = true;
-      need_catchup_discovery_ = false;
-      idle_timeout_ = millis + 10;
-    }
-    if (disc_catchup_pending_ && disq_.empty() && millis >= idle_timeout_) {
-      // We did not get any neighbor reports usable for partial discovery. Let's do a full discovery.
-      disc_catchup_pending_ = false;
-      need_full_discovery_ = true;
-      need_catchup_discovery_ = false;
-    }
-    if (!disq_.empty()) {
-      HandleDiscovery();
-    }
-#endif
     if (need_full_discovery_ && disc_state_ == kNotRunning) {
       disc_state_ = kStartFullDiscovery;
       need_full_discovery_ = false;
@@ -307,33 +285,6 @@ private:
     timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
   }
 
-#if 0  
-  // Executed by the leader only. Initializes the state machines for the discovery.
-  void SetupFullDiscovery() {
-    while (!disq_.empty()) { disq_.pop(); }
-    known_nodes_.clear();
-    disc_neighbor_dir_ = -1;
-    to_disc_neighbor_lookup_ = false;
-    discovery_done_ = false;
-    disc_tx1_pending_ = false;
-    disc_tx2_pending_ = false;
-
-    // Requests everyone else to drop their state.
-    auto ev = Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kReInit);
-    iface_->SendEvent(ev);
-    disc_catchup_pending_ = false;
-    need_catchup_discovery_ = false;
-    need_full_discovery_ = false;
-
-    // Setup local address.
-    my_x_ = 0x80;
-    my_y_ = 0x80;
-    ev = Defs::CreateEvent(Defs::kLocalFound, my_x_, my_y_);
-    iface_->SendEvent(ev);
-    AddNodeToDiscovery(my_x_, my_y_, iface_->GetAlias());
-  }
-#endif
-
   // Checks if a node is known or not. If not known, adds the node to known and enqueues it for neighbor discovery.
   void AddNodeToDiscovery(uint8_t x, uint8_t y, uint16_t alias) {
     NodeCoord nc = GetCoord(x, y);
@@ -344,57 +295,8 @@ private:
     }
   }
 
-#if 0
-  void HandleDiscovery() {
-    if (disc_tx2_pending_ && !iface_->TxPending()) {
-      OnGlobalEvent(disc_ev2_, iface_->GetAlias());  // loopback
-      disc_tx2_pending_ = false;
-    }
-    if (disc_tx1_pending_ && !iface_->TxPending()) {
-      OnGlobalEvent(disc_ev1_, iface_->GetAlias());  // loopback
-      disc_tx1_pending_ = false;
-      disc_tx2_pending_ = true;
-      iface_->SendEvent(disc_ev2_);
-    }
-    if (to_disc_neighbor_lookup_) {
-      // work is pending
-      if (iface_->millis() < disc_timeout_) return;
-      to_disc_neighbor_lookup_ = false;
-      // Nothing else to do, the state machine will continue below.
-    }
-    if ((disc_startup_pending_ || disc_catchup_pending_) && iface_->millis() < idle_timeout_) {
-      return;
-    }
-    if (disc_startup_pending_) {
-      disc_startup_pending_ = false;
-      need_catchup_discovery_ = false;
-    }
-    if (disc_catchup_pending_) {
-      disc_catchup_pending_ = false;
-    }
-    ++disc_neighbor_dir_;
-    if (disc_neighbor_dir_ > kMaxDirection) {
-      // This entry is done.
-      disq_.pop();
-      disc_neighbor_dir_ = 0;
-      if (disq_.empty()) {
-        discovery_done_ = true;
-        return;
-      }
-    }
-    uint8_t x = GetCoordX(disq_.front());
-    uint8_t y = GetCoordY(disq_.front());
-    uint8_t nx = x + deltax[disc_neighbor_dir_];
-    uint8_t ny = y + deltay[disc_neighbor_dir_];
-    to_disc_neighbor_lookup_ = true;
-    disc_timeout_ = iface_->millis() + kLocalNeighborLookupTimeoutMsec;
-    disc_ev1_ = Defs::CreateEvent(Defs::kLocalAssign, nx, ny);
-    disc_ev2_ = Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)disc_neighbor_dir_);
-    disc_tx1_pending_ = true;
-    iface_->SendEvent(disc_ev1_);
-  }
-#endif
-
+  // State machine for running the discovery process after startup or after
+  // seeing nodes rebooting.
   enum DiscoveryState : uint8_t {
     kNotRunning = 0,
     kWaitForSetup,
