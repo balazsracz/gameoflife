@@ -10,6 +10,9 @@ public:
   // @return true if the message was sent, false if it was dropped.
   virtual bool SendEvent(uint64_t event_id) = 0;
 
+  // Send an event for loopback.
+  virtual void LoopbackEvent(uint64_t event_id) = 0;
+
   // @return the currently used alias of the local node,  or 0 if the node is not initialized yet.
   virtual uint16_t GetAlias() = 0;
 
@@ -79,6 +82,12 @@ public:
       need_partial_discovery_ = false;
     }
     DoDiscovery();
+    if (run_tick_ && millis >= tick_timeout_) {
+      auto ev = Defs::CreateGlobalCmd(Defs::kEvolveAndReport);
+      iface_->SendEvent(ev);
+      ::OnGlobalEvent(ev, iface_->GetAlias());
+      tick_timeout_ += evolution_speed_msec_;
+    }
   }
 
   // Call this function when a global event arrives.
@@ -273,6 +282,9 @@ private:
     need_full_discovery_ = false;
     disc_catchup_pending_ = false;
     disc_state_ = kNotRunning;
+    evolution_speed_msec_ = Defs::kDefaultEvolutionSpeedMsec;
+    tick_timeout_ = 0;
+    run_tick_ = false;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -326,6 +338,8 @@ private:
     kWaitLocalTriggerSend,
     kWaitLocalFeedback,
     // Iteration end
+    kSendNeighborReport,
+    kWaitNeighborResponses,
     kDiscoveryDone,
 
     kPartialSendSetup,
@@ -342,6 +356,7 @@ private:
       case kNotRunning:
         return;
       case kWaitForSetup:
+        run_tick_ = false;
         if (!iface_->TxPending()) { return; }
         need_partial_discovery_ = false;
         while (!disq_.empty()) { disq_.pop(); }
@@ -384,7 +399,7 @@ private:
             disq_.pop();
             disc_neighbor_dir_ = 0;
             if (disq_.empty()) {
-              disc_state_ = kDiscoveryDone;
+              disc_state_ = kSendNeighborReport;
               return;
             }
           }
@@ -419,13 +434,24 @@ private:
         to_disc_neighbor_lookup_ = false;
         disc_state_ = kIterationFirst;
         return;
-        // end of iteration.
-      case kDiscoveryDone:
-        disc_state_ = kNotRunning;
+      // end of iteration.
+      case kSendNeighborReport:
         iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors));
         OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors), iface_->GetAlias());
+        disc_state_ = kWaitNeighborResponses;
+        return;
+      case kWaitNeighborResponses:
+        if (iface_->millis() < idle_timeout_) return;
+        disc_state_ = kDiscoveryDone;
+        return;
+
+      case kDiscoveryDone:
+        disc_state_ = kNotRunning;
+        run_tick_ = true;
+        tick_timeout_ = iface_->millis();
         return;
       case kPartialSendSetup:
+        run_tick_ = false;
         iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kLocalToggleUnassigned));
         disc_catchup_pending_ = true;
         need_partial_discovery_ = false;
@@ -532,7 +558,7 @@ private:
       l.neigh_y = Defs::GetArgY(ev);
       // This is the direction on the diagonal neighbor that looks towards the neighbor.
       l.neigh_dir = Defs::GetDir2(ev);
-      const auto& seg = Defs::kEdgeSegments[l.neigh_dir]; 
+      const auto& seg = Defs::kEdgeSegments[l.neigh_dir];
       l.pixel_offset = seg.bit_num + num_stride * seg.bit_stride;
     }
   }
@@ -627,9 +653,15 @@ private:
   bool need_full_discovery_ : 1;
   // True if we sent out the toggle neighbors command at the beginning of a catchup discovery, but have not yet gotten all responses back.
   bool disc_catchup_pending_ : 1;
+  // True if we should be emitting tick messages.
+  bool run_tick_ : 1;
 
   // Last direction we queried for the node in the head of the queue. -1 .. 3.
   int disc_neighbor_dir_ : 4;
+  // When should we emit the next evolution tick.
+  uint32_t tick_timeout_;
+  uint32_t evolution_speed_msec_{ Defs::kDefaultEvolutionSpeedMsec };
+
   // Timeout used for discovery operations.
   uint32_t disc_timeout_;
   // These events are sent out for each quadrant discovery.

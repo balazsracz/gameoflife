@@ -16,6 +16,9 @@ static constexpr int kMaxDirection = (int)kWest;
 
 struct ProtocolDefs {
 public:
+  // How frequently we should emit evolution ticks.
+  static constexpr unsigned kDefaultEvolutionSpeedMsec = 250;
+
   static constexpr uint64_t kEventPrefix = UINT64_C(0x09000D0000000000);
   // Shift a byte this many bits to get the command byte.
   static constexpr unsigned kCmdShift = 32;
@@ -86,6 +89,10 @@ public:
     kProposeLeader = 6,
     // Triggers all unassigned nodes to flip all their local lines.
     kLocalToggleUnassigned = 8,
+    // When this command comes, each node should evolve the current state and report the state.
+    kEvolveAndReport = 9,
+    // Report the current state.
+    kReportState = 10,
   };
 
   // Extract the command from an event.
@@ -160,7 +167,7 @@ public:
     return CreateEvent(kGlobalCmd, 0, 0, (uint16_t)arg);
   }
 
-  
+
   // A segment is a sequence of 4 bits in the 16-bit argument describing the
   // current state of a node. Rows can be segments, but also edges.
   struct Segment {
@@ -178,13 +185,13 @@ public:
   // left-to-right.
   static constexpr const Segment kRowSegments[4] = {
     // Row 0 (north; left-to-right)
-    {.bit_num = 0, .bit_stride = 1},
+    { .bit_num = 0, .bit_stride = 1 },
     // Row 1 (upper middle row)
-    {.bit_num = 4, .bit_stride = 1},
+    { .bit_num = 4, .bit_stride = 1 },
     // Row 2 (lower middle row)
-    {.bit_num = 8, .bit_stride = 1},
+    { .bit_num = 8, .bit_stride = 1 },
     // Row 3 (south, left-to-right)
-    {.bit_num = 12, .bit_stride = 1},
+    { .bit_num = 12, .bit_stride = 1 },
   };
 
   // These segments are indexed by a Direction, and describe the respective
@@ -192,15 +199,15 @@ public:
   // is top-down, South is right-to-left, West is bottom-up.
   static constexpr const Segment kEdgeSegments[4] = {
     // North; left-to-right
-    {.bit_num = 0, .bit_stride = 1},
+    { .bit_num = 0, .bit_stride = 1 },
     // East; top-down
-    {.bit_num = 3, .bit_stride = 4},
+    { .bit_num = 3, .bit_stride = 4 },
     // South; right-to-left
-    {.bit_num = 15, .bit_stride = -1},
+    { .bit_num = 15, .bit_stride = -1 },
     // West; bottom-up
-    {.bit_num = 12, .bit_stride = -4},
+    { .bit_num = 12, .bit_stride = -4 },
   };
-  
+
 
 private:
   // do not instantiate this class.

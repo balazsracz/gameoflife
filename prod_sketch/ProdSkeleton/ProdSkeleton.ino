@@ -93,7 +93,7 @@ void CharlieApply(const CharlieProgram* pgm, const int* pins, bool* data, int id
 
 // ================== Global bus API ======================
 // Implement this function for handling events coming from the global bus.
-extern void OnGlobalEvent(uint64_t event);
+extern void OnGlobalEvent(uint64_t event, uint16_t src);
 
 // Call this function to send a broadcast event to the global bus.
 extern bool SendEvent(uint64_t event_id);
@@ -173,6 +173,10 @@ extern bool LocalBusIsActive(Direction dir);
 class ProtocolEngineIfImpl : public ProtocolEngineInterface {
   bool SendEvent(uint64_t event_id) override {
     return ::SendEvent(event_id);
+  }
+
+  void LoopbackEvent(uint64_t event_id) override {
+    ::OnGlobalEvent(event_id, GetAlias());
   }
 
   // @return the currently used alias of the local node.
