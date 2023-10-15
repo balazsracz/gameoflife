@@ -69,6 +69,7 @@ public:
       // Let's trigger a leader election.
       ParticipateLeaderElection();
     }
+#if 0
     if (need_full_discovery_ && !iface_->TxPending()) {
       need_full_discovery_ = false;
       need_catchup_discovery_ = false;
@@ -89,6 +90,16 @@ public:
     if (!disq_.empty()) {
       HandleDiscovery();
     }
+#endif
+    if (need_full_discovery_ && disc_state_ == kNotRunning) {
+      disc_state_ = kStartFullDiscovery;
+      need_full_discovery_ = false;
+    }
+    if (need_partial_discovery_ && disc_state_ == kNotRunning && millis >= idle_timeout_) {
+      disc_state_ = kStartPartialDiscovery;
+      need_partial_discovery_ = false;
+    }
+    DoDiscovery();
   }
 
   // Call this function when a global event arrives.
@@ -119,7 +130,7 @@ public:
           // Discovery event found
           if (to_disc_neighbor_lookup_) {
             to_disc_neighbor_lookup_ = false;
-            timeout_ = INVALID_TIMEOUT;
+            disc_timeout_ = INVALID_TIMEOUT;
             AddNodeToDiscovery(pending_x_, pending_y_, src);
           }
           pending_x_ = INVALID_COORD;
@@ -172,7 +183,7 @@ private:
         } else if (is_leader_) {
           // Tell the new node that we are the leader.
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
-          need_catchup_discovery_ = true;
+          need_partial_discovery_ = true;
         }
         return;
       case Defs::kReportNeighbors:
@@ -266,10 +277,9 @@ private:
     is_leader_ = false;
     leader_alias_ = 0xF000;
     known_local_signal_ = 0;
-    need_catchup_discovery_ = false;
+    need_partial_discovery_ = false;
     need_full_discovery_ = false;
     disc_catchup_pending_ = false;
-    disc_startup_pending_ = false;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -297,11 +307,12 @@ private:
     timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
   }
 
+#if 0  
   // Executed by the leader only. Initializes the state machines for the discovery.
   void SetupFullDiscovery() {
     while (!disq_.empty()) { disq_.pop(); }
     known_nodes_.clear();
-    discovery_state_ = -1;
+    disc_neighbor_dir_ = -1;
     to_disc_neighbor_lookup_ = false;
     discovery_done_ = false;
     disc_tx1_pending_ = false;
@@ -310,7 +321,6 @@ private:
     // Requests everyone else to drop their state.
     auto ev = Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kReInit);
     iface_->SendEvent(ev);
-    disc_startup_pending_ = true;
     disc_catchup_pending_ = false;
     need_catchup_discovery_ = false;
     need_full_discovery_ = false;
@@ -322,6 +332,7 @@ private:
     iface_->SendEvent(ev);
     AddNodeToDiscovery(my_x_, my_y_, iface_->GetAlias());
   }
+#endif
 
   // Checks if a node is known or not. If not known, adds the node to known and enqueues it for neighbor discovery.
   void AddNodeToDiscovery(uint8_t x, uint8_t y, uint16_t alias) {
@@ -333,6 +344,7 @@ private:
     }
   }
 
+#if 0
   void HandleDiscovery() {
     if (disc_tx2_pending_ && !iface_->TxPending()) {
       OnGlobalEvent(disc_ev2_, iface_->GetAlias());  // loopback
@@ -360,11 +372,11 @@ private:
     if (disc_catchup_pending_) {
       disc_catchup_pending_ = false;
     }
-    ++discovery_state_;
-    if (discovery_state_ > kMaxDirection) {
+    ++disc_neighbor_dir_;
+    if (disc_neighbor_dir_ > kMaxDirection) {
       // This entry is done.
       disq_.pop();
-      discovery_state_ = 0;
+      disc_neighbor_dir_ = 0;
       if (disq_.empty()) {
         discovery_done_ = true;
         return;
@@ -372,14 +384,150 @@ private:
     }
     uint8_t x = GetCoordX(disq_.front());
     uint8_t y = GetCoordY(disq_.front());
-    uint8_t nx = x + deltax[discovery_state_];
-    uint8_t ny = y + deltay[discovery_state_];
+    uint8_t nx = x + deltax[disc_neighbor_dir_];
+    uint8_t ny = y + deltay[disc_neighbor_dir_];
     to_disc_neighbor_lookup_ = true;
     disc_timeout_ = iface_->millis() + kLocalNeighborLookupTimeoutMsec;
     disc_ev1_ = Defs::CreateEvent(Defs::kLocalAssign, nx, ny);
-    disc_ev2_ = Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)discovery_state_);
+    disc_ev2_ = Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)disc_neighbor_dir_);
     disc_tx1_pending_ = true;
     iface_->SendEvent(disc_ev1_);
+  }
+#endif
+
+  enum DiscoveryState : uint8_t {
+    kNotRunning = 0,
+    kWaitForSetup,
+    kSendSetup,
+    kWaitForSetupResponses,
+    kAnnounceLocal,
+    kWaitLocalAnnounce,
+    // Iteration on the queue
+    kSendLocalAssign,
+    kWaitLocalAssignSend,
+    kSendLocalTrigger,
+    kWaitLocalTriggerSend,
+    kWaitLocalFeedback,
+    // Iteration end
+    kDiscoveryDone,
+
+    kPartialSendSetup,
+    kPartialWaitSetupResponses,
+
+
+    kIterationFirst = kSendLocalAssign,
+    kStartFullDiscovery = kWaitForSetup,
+    kStartPartialDiscovery = kPartialSendSetup,
+  };
+
+  void DoDiscovery() {
+    switch (disc_state_) {
+      case kNotRunning:
+        return;
+      case kWaitForSetup:
+        if (!iface_->TxPending()) { return; }
+        need_partial_discovery_ = false;
+        while (!disq_.empty()) { disq_.pop(); }
+        known_nodes_.clear();
+        to_disc_neighbor_lookup_ = false;
+        discovery_done_ = false;
+
+        disc_state_ = kSendSetup;
+        return;
+      case kSendSetup:
+        // Requests everyone else to drop their state.
+        iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kReInit));
+        idle_timeout_ = iface_->millis() + 10;
+        disc_state_ = kWaitForSetupResponses;
+        return;
+
+      case kWaitForSetupResponses:
+        if (iface_->millis() < idle_timeout_) return;
+        need_partial_discovery_ = false;
+        disc_state_ = kAnnounceLocal;
+        return;
+      case kAnnounceLocal:
+        // Setup local address.
+        my_x_ = 0x80;
+        my_y_ = 0x80;
+        iface_->SendEvent(Defs::CreateEvent(Defs::kLocalFound, my_x_, my_y_));
+        AddNodeToDiscovery(my_x_, my_y_, iface_->GetAlias());
+        disc_neighbor_dir_ = -1;
+        disc_state_ = kWaitLocalAnnounce;
+        return;
+      case kWaitLocalAnnounce:
+        if (iface_->TxPending()) return;
+        disc_state_ = kIterationFirst;
+        return;
+        // beginning of iteration
+      case kSendLocalAssign:
+        {
+          ++disc_neighbor_dir_;
+          if (disc_neighbor_dir_ > kMaxDirection) {
+            // This entry is done.
+            disq_.pop();
+            disc_neighbor_dir_ = 0;
+            if (disq_.empty()) {
+              disc_state_ = kDiscoveryDone;
+              return;
+            }
+          }
+          uint8_t x = GetCoordX(disq_.front());
+          uint8_t y = GetCoordY(disq_.front());
+          uint8_t nx = x + deltax[disc_neighbor_dir_];
+          uint8_t ny = y + deltay[disc_neighbor_dir_];
+          to_disc_neighbor_lookup_ = true;
+          disc_timeout_ = iface_->millis() + kLocalNeighborLookupTimeoutMsec;
+          disc_ev1_ = Defs::CreateEvent(Defs::kLocalAssign, nx, ny);
+          disc_ev2_ = Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)disc_neighbor_dir_);
+          iface_->SendEvent(disc_ev1_);
+          disc_state_ = kWaitLocalAssignSend;
+          return;
+        }
+      case kWaitLocalAssignSend:
+        if (iface_->TxPending()) return;
+        OnGlobalEvent(disc_ev1_, iface_->GetAlias());  // loopback
+        disc_state_ = kSendLocalTrigger;
+        return;
+      case kSendLocalTrigger:
+        iface_->SendEvent(disc_ev2_);
+        disc_state_ = kWaitLocalTriggerSend;
+        return;
+      case kWaitLocalTriggerSend:
+        if (iface_->TxPending()) return;
+        OnGlobalEvent(disc_ev2_, iface_->GetAlias());  // loopback
+        disc_state_ = kWaitLocalFeedback;
+        return;
+      case kWaitLocalFeedback:
+        if (to_disc_neighbor_lookup_ && (iface_->millis() < disc_timeout_)) return;
+        to_disc_neighbor_lookup_ = false;
+        disc_state_ = kIterationFirst;
+        return;
+        // end of iteration.
+      case kDiscoveryDone:
+        discovery_done_ = true;
+        disc_state_ = kNotRunning;
+        return;
+
+      case kPartialSendSetup:
+        iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kLocalToggleUnassigned));
+        disc_catchup_pending_ = true;
+        need_partial_discovery_ = false;
+        idle_timeout_ = iface_->millis() + 10;
+        disc_state_ = kPartialWaitSetupResponses;
+        return;
+      case kPartialWaitSetupResponses:
+        if (iface_->millis() < idle_timeout_) return;
+        disc_catchup_pending_ = false;
+        if (disq_.empty()) {
+          // Did not get any neighbors reporting. Fall back to full discovery.
+          disc_state_ = kStartFullDiscovery;
+          return;
+        }
+        disc_neighbor_dir_ = -1;
+        disc_state_ = kIterationFirst;
+        return;
+    }
   }
 
   // Called from Loop() when there is an active neighbor search declared on the bus.
@@ -392,7 +540,12 @@ private:
           if ((known_local_signal_ & dir_bit) == 0 && !to_cancel_local_signal_) {
             // Not sure what they want to assign.
             if (my_x_ != INVALID_COORD && my_y_ != INVALID_COORD) {
-              iface_->SendEvent(Defs::CreateEvent(Defs::kLocalSpurious, my_x_, my_y_));
+              auto ev = Defs::CreateEvent(Defs::kLocalSpurious, my_x_, my_y_);
+              iface_->SendEvent(ev);
+              if (is_leader_) {
+                // Loopback needed for this event.
+                OnGlobalEvent(ev, iface_->GetAlias());
+              }
             }
           }
           known_local_signal_ |= dir_bit;
@@ -412,6 +565,9 @@ private:
         if (my_x_ != pending_x_ || my_y_ != pending_y_) {
           // Error: we have to different set of coordinates.
           iface_->SendEvent(Defs::CreateEvent(Defs::kLocalConflict, my_x_, my_y_, pending_x_, pending_y_));
+        } else if (to_disc_neighbor_lookup_) {
+          // search for neighbors reached back to the master
+          to_disc_neighbor_lookup_ = false;
         }
         // Records the neighbor in the links we know about.
         neighbors_[dir].neigh_x = pending_neigh_x_;
@@ -495,23 +651,21 @@ private:
   bool to_disc_neighbor_lookup_ : 1;
 
   // ==== Leader-only state ====
+
+  // Ongoing discovery state.
+  DiscoveryState disc_state_;
+
   // We've seen some nodes rebooting, do a discovery for them.
-  bool need_catchup_discovery_ : 1;
+  bool need_partial_discovery_ : 1;
   // We need to do a discovery from the beginning.
   bool need_full_discovery_ : 1;
   // True if the discovery has completed.
   bool discovery_done_ : 1;
-  // True while the first discovery message is in the CAN transmit queue.
-  bool disc_tx1_pending_ : 1;
-  // True while the second discovery message is in the CAN transmit queue.
-  bool disc_tx2_pending_ : 1;
-  // True if we sent out the reinitialize command but have not yet gotten all responses back.
-  bool disc_startup_pending_ : 1;
   // True if we sent out the toggle neighbors command at the beginning of a catchup discovery, but have not yet gotten all responses back.
   bool disc_catchup_pending_ : 1;
 
   // Last direction we queried for the node in the head of the queue. -1 .. 3.
-  int discovery_state_ : 4;
+  int disc_neighbor_dir_ : 4;
   // Timeout used for discovery operations.
   uint32_t disc_timeout_;
   // These events are sent out for each quadrant discovery.

@@ -152,6 +152,10 @@ public:
            (uint64_t(d1) << kCmdShift) | (uint64_t(d2) << (kCmdShift + 2));
   }
 
+  static constexpr uint64_t CreateGlobalCmd(GlobalCommand arg) {
+    return CreateEvent(kGlobalCmd, 0, 0, (uint16_t)arg);
+  }
+
 
 private:
   // do not instantiate this class.
