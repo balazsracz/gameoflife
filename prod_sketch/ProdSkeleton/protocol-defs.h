@@ -5,7 +5,11 @@ enum Direction : uint8_t {
   kNorth = 0,
   kEast = 1,
   kSouth = 2,
-  kWest = 3
+  kWest = 3,
+  kNorthWest = 4,
+  kNorthEast = 5,
+  kSouthEast = 6,
+  kSouthWest = 7
 };
 
 static constexpr int kMaxDirection = (int)kWest;
