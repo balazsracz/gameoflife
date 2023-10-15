@@ -20,6 +20,7 @@ public:
   static constexpr unsigned kDefaultEvolutionSpeedMsec = 250;
 
   static constexpr uint64_t kEventPrefix = UINT64_C(0x09000D0000000000);
+  static constexpr uint64_t kEventMask   = UINT64_C(0xFFFFFF0000000000);
   // Shift a byte this many bits to get the command byte.
   static constexpr unsigned kCmdShift = 32;
   static constexpr uint64_t kCmdMask = UINT64_C(0xFF) << kCmdShift;
@@ -93,7 +94,18 @@ public:
     kEvolveAndReport = 9,
     // Report the current state.
     kReportState = 10,
+    // Stop iteration (acted upon by the leader only)
+    kStopIteration = 11,
+    // Stop iteration (acted upon by the leader only)
+    kStartIteration = 12,
+    // Set state to a random bitset.
+    kSetStateRandom = 13,
   };
+
+  // Checks if an event belong to this protocol.
+  static constexpr bool IsProtocolEvent(uint64_t ev) {
+    return (ev & kEventMask) == kEventPrefix;
+  }
 
   // Extract the command from an event.
   static Command GetCommand(uint64_t ev) {

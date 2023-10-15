@@ -34,6 +34,13 @@ public:
   ProtocolEngine() {
   }
 
+  uint8_t GetX() {
+    return my_x_;
+  }
+  uint8_t GetY() {
+    return my_y_;
+  }
+
   // Call this function once from setup().
   // @param iface implementation object proxying a variety of functions to the global state machines. Ownership is NOT transferred.
   void Setup(ProtocolEngineInterface* iface) {
@@ -94,6 +101,7 @@ public:
   // @param ev the 64-bit event payload.
   // @param src the source node alias that sent this event
   void OnGlobalEvent(int64_t ev, uint16_t src) {
+    if (!Defs::IsProtocolEvent(ev)) return;
     idle_timeout_ = iface_->millis() + 10;
     Defs::Command cmd = Defs::GetCommand(ev);
     switch (cmd) {
@@ -224,6 +232,12 @@ private:
           }
           to_cancel_local_signal_ = true;
         }
+        return;
+      case Defs::kStartIteration:
+        run_tick_ = true;
+        return;
+      case Defs::kStopIteration:
+        run_tick_ = false;
         return;
     }
   }
@@ -357,7 +371,8 @@ private:
         return;
       case kWaitForSetup:
         run_tick_ = false;
-        if (!iface_->TxPending()) { return; }
+        if (iface_->GetAlias() == 0) { return; }
+        if (iface_->TxPending()) { return; }
         need_partial_discovery_ = false;
         while (!disq_.empty()) { disq_.pop(); }
         known_nodes_.clear();

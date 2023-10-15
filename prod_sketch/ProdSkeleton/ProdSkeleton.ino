@@ -136,6 +136,7 @@ void Timer6000Hz() {
 void Timer4Hz() {
   static int ctr = 0;
   ++ctr;
+#if 0
   memset(leds, 0, sizeof(leds));
   leds[ctr % 16] = 1;
   SerialUSB.printf("%08x %08x %d conv_count=%d next_conv_tick=%d\n", *((uint32_t*)btn_row_active),
@@ -149,6 +150,7 @@ void Timer4Hz() {
     SendEvent(ev);
     SerialUSB.printf("event sent: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
   }
+#endif
 }
 
 
@@ -210,10 +212,69 @@ class ProtocolEngineIfImpl : public ProtocolEngineInterface {
 
 ProtocolEngine engine;
 
+bool state[6][6];
+bool next_state[6][6];
+
+struct Delta {
+  int dr;
+  int dc;
+};
+
+static constexpr Delta neighbors[8] = {
+  { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 }, { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 }
+};
+
 void OnGlobalEvent(uint64_t ev, uint16_t src) {
-  engine.OnGlobalEvent(ev, src);
+  using Defs = ::ProtocolDefs;
   SerialUSB.printf("event arrived: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
-  leds[ev & 15] = true;
+  engine.OnGlobalEvent(ev, src);
+  if (!Defs::IsProtocolEvent(ev)) return;
+  auto cmd = Defs::GetCommand(ev);
+  if (cmd == Defs::kGlobalCmd) {
+    Defs::GlobalCommand gcmd = (Defs::GlobalCommand)Defs::GetArg(ev);
+    switch (gcmd) {
+      case Defs::kEvolveAndReport:
+        {
+          memset(next_state, 0, sizeof(next_state));
+          uint16_t report = 0;
+          for (int r = 1; r <= 4; ++r) {
+            for (int c = 1; c <= 4; ++c) {
+              unsigned count = 0;
+              for (auto d : neighbors) {
+                if (state[r + d.dr][c + d.dc]) ++count;
+              }
+              next_state[r][c] = (count == 3 || (count == 2 && state[r][c]));
+              leds[(r - 1) * 4 + (c-1)] = next_state[r][c];
+              if (next_state[r][c]) {
+                report |= 1u << ((r - 1) * 4 + (c-1));
+              }
+            }
+          }
+          memcpy(state, next_state, sizeof(state));
+          SendEvent(Defs::CreateEvent(Defs::kStateReport, engine.GetX(), engine.GetY(), report));
+          break;
+        }
+      case Defs::kSetStateRandom:
+        {
+          memset(next_state, 0, sizeof(next_state));
+          uint16_t report = 0;
+
+          for (int r = 1; r <= 4; ++r) {
+            for (int c = 1; c <= 4; ++c) {
+              next_state[r][c] = (rand() % 100) < 40;
+              leds[(r - 1) * 4 + c] = next_state[r][c];
+              if (next_state[r][c]) {
+                report |= 1u << ((r - 1) * 4 + c);
+              }
+            }
+          }
+          memcpy(state, next_state, sizeof(state));
+          SendEvent(Defs::CreateEvent(Defs::kStateReport, engine.GetX(), engine.GetY(), report));
+          break;
+        }
+      default: break;
+    }
+  }
 }
 
 void setup() {
@@ -226,6 +287,7 @@ void setup() {
 
   pinMode(kLed13Pin, OUTPUT);
   pinMode(kLed14Pin, OUTPUT);
+  memset(state, 0, sizeof(state));
 }
 
 void loop() {
@@ -243,8 +305,8 @@ void loop() {
   //LocalBusSignal(kWest, btn_col_active[0] && (btn_row_active[1] || btn_row_active[2]));
   //LocalBusSignal(kEast, btn_col_active[3] && (btn_row_active[1] || btn_row_active[2]));
 
-  leds[4] = LocalBusIsActive(kWest);
-  leds[11] = LocalBusIsActive(kEast);
-  leds[1] = LocalBusIsActive(kNorth);
-  leds[14] = LocalBusIsActive(kSouth);
+  //leds[4] = LocalBusIsActive(kWest);
+  //leds[11] = LocalBusIsActive(kEast);
+  //leds[1] = LocalBusIsActive(kNorth);
+  //leds[14] = LocalBusIsActive(kSouth);
 }
