@@ -58,6 +58,7 @@ public:
           // there is a neighbor here.
           iface_->SendEvent(Defs::CreateEvent(Defs::kReportNeighbor, my_x_, my_y_, l.neigh_x, l.neigh_y, (Direction)next_neighbor_report_, l.neigh_dir));
         }
+        ++next_neighbor_report_;
       }
     }
     if (need_init_done_ && iface_->GetAlias() != 0 && !iface_->TxPending()) {
@@ -165,6 +166,9 @@ private:
         }
         return;
       case Defs::kReportNeighbors:
+        // Clears any remnants of a previous discovery.
+        pending_x_ = INVALID_COORD;
+        pending_y_ = INVALID_COORD;
         // This will start the state machine in the Loop().
         next_neighbor_report_ = 0;
         return;
@@ -249,7 +253,7 @@ private:
     timeout_ = INVALID_TIMEOUT;
     idle_timeout_ = iface_->millis() + 10;
     neighbors_.clear();
-    neighbors_.resize(4);  // number of directions
+    neighbors_.resize(8);  // number of directions
     need_init_done_ = true;
     seen_leader_ = false;
     is_leader_ = false;
@@ -258,6 +262,7 @@ private:
     need_partial_discovery_ = false;
     need_full_discovery_ = false;
     disc_catchup_pending_ = false;
+    disc_state_ = kNotRunning;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -332,7 +337,6 @@ private:
         while (!disq_.empty()) { disq_.pop(); }
         known_nodes_.clear();
         to_disc_neighbor_lookup_ = false;
-        discovery_done_ = false;
 
         disc_state_ = kSendSetup;
         return;
@@ -407,10 +411,10 @@ private:
         return;
         // end of iteration.
       case kDiscoveryDone:
-        discovery_done_ = true;
         disc_state_ = kNotRunning;
+        iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors));
+        OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors), iface_->GetAlias());
         return;
-
       case kPartialSendSetup:
         iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kLocalToggleUnassigned));
         disc_catchup_pending_ = true;
@@ -520,6 +524,9 @@ private:
     uint8_t neigh_y{ INVALID_COORD };
     // Direction on the neighbor side
     Direction neigh_dir;
+    // For corner links (NE, SE, SW, NW), this index pinpoints which bit we are
+    // talking about. 0..15.
+    uint8_t pixel_offset{ 16 };
   };
   // Neighbor's assigned coordinates.
   std::vector<Link> neighbors_;
@@ -555,14 +562,12 @@ private:
   // ==== Leader-only state ====
 
   // Ongoing discovery state.
-  DiscoveryState disc_state_;
+  DiscoveryState disc_state_{ kNotRunning };
 
   // We've seen some nodes rebooting, do a discovery for them.
   bool need_partial_discovery_ : 1;
   // We need to do a discovery from the beginning.
   bool need_full_discovery_ : 1;
-  // True if the discovery has completed.
-  bool discovery_done_ : 1;
   // True if we sent out the toggle neighbors command at the beginning of a catchup discovery, but have not yet gotten all responses back.
   bool disc_catchup_pending_ : 1;
 
