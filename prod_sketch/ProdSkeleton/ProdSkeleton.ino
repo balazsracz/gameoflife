@@ -244,9 +244,9 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
                 if (state[r + d.dr][c + d.dc]) ++count;
               }
               next_state[r][c] = (count == 3 || (count == 2 && state[r][c]));
-              leds[(r - 1) * 4 + (c-1)] = next_state[r][c];
+              leds[(r - 1) * 4 + (c - 1)] = next_state[r][c];
               if (next_state[r][c]) {
-                report |= 1u << ((r - 1) * 4 + (c-1));
+                report |= 1u << ((r - 1) * 4 + (c - 1));
               }
             }
           }
@@ -262,9 +262,9 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
           for (int r = 1; r <= 4; ++r) {
             for (int c = 1; c <= 4; ++c) {
               next_state[r][c] = (rand() % 100) < 40;
-              leds[(r - 1) * 4 + c] = next_state[r][c];
+              leds[(r - 1) * 4 + (c-1)] = next_state[r][c];
               if (next_state[r][c]) {
-                report |= 1u << ((r - 1) * 4 + c);
+                report |= 1u << ((r - 1) * 4 + (c-1));
               }
             }
           }
@@ -273,6 +273,71 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
           break;
         }
       default: break;
+    }
+  } else if (cmd == Defs::kStateReport) {
+    uint8_t x = Defs::GetX(ev);
+    uint8_t y = Defs::GetY(ev);
+    for (unsigned idir = 0; idir < engine.neighbors_.size(); ++idir) {
+      const auto& n = engine.neighbors_[idir];
+      if (n.neigh_x != x || n.neigh_y != y) continue;
+      // We have to import this neighbor data into the current state.
+      if (idir >= 4) {
+        // import 1 bit
+        bool value = Defs::GetArg(ev) & (1u << n.pixel_offset);
+        switch ((Direction)idir) {
+          case kNorthWest:
+            state[0][0] = value;
+            break;
+          case kNorthEast:
+            state[0][5] = value;
+            break;
+          case kSouthEast:
+            state[5][5] = value;
+            break;
+          case kSouthWest:
+            state[5][0] = value;
+            break;
+        }
+      } else {
+        // we have to import 4 bits.
+        auto arg = Defs::GetArg(ev);
+        const Defs::Segment& seg = Defs::kEdgeSegments[n.neigh_dir];
+        // starting row, col, delta row, col. This is COUNTERCLOCKWISE.
+        int r, c, dr, dc;
+        switch ((Direction)idir) {
+          case kNorth:
+            r = 0;
+            c = 4;
+            dr = 0;
+            dc = -1;
+            break;
+          case kSouth:
+            r = 5;
+            c = 1;
+            dr = 0;
+            dc = 1;
+            break;
+          case kEast:
+            r = 4;
+            c = 5;
+            dr = -1;
+            dc = 0;
+            break;
+          case kWest:
+            r = 1;
+            c = 0;
+            dr = 1;
+            dc = 0;
+            break;
+        }
+        unsigned bit_num = seg.bit_num;
+        for (unsigned i = 0; i < 4; ++i) {
+          state[r][c] = arg & (1u << bit_num);
+          r += dr;
+          c += dc;
+          bit_num += seg.bit_stride;
+        }
+      }
     }
   }
 }

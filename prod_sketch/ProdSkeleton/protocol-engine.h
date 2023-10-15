@@ -234,7 +234,9 @@ private:
         }
         return;
       case Defs::kStartIteration:
-        run_tick_ = true;
+        if (is_leader_) {
+          run_tick_ = true;
+        }
         return;
       case Defs::kStopIteration:
         run_tick_ = false;
@@ -616,6 +618,7 @@ private:
   uint8_t my_x_{ INVALID_COORD };
   uint8_t my_y_{ INVALID_COORD };
 
+public:
   struct Link {
     // Coordinates of the neighbor
     uint8_t neigh_x{ INVALID_COORD };
@@ -629,6 +632,7 @@ private:
   // Neighbor's assigned coordinates.
   std::vector<Link> neighbors_;
 
+private:
   // millis() tick when we claim the bus is idle.
   uint32_t idle_timeout_{ INVALID_TIMEOUT };
 

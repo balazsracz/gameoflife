@@ -207,7 +207,7 @@ public:
   };
 
   // These segments are indexed by a Direction, and describe the respective
-  // edge, in a clockwise manner. This means that North is left-to-right, East
+  // edge, in a CLOCKWISE manner. This means that North is left-to-right, East
   // is top-down, South is right-to-left, West is bottom-up.
   static constexpr const Segment kEdgeSegments[4] = {
     // North; left-to-right
