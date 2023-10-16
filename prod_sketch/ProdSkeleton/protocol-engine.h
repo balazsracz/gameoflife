@@ -351,8 +351,6 @@ private:
     kWaitLocalAnnounce,
     // Iteration on the queue
     kSendLocalAssign,
-    kWaitLocalAssignSend,
-    kSendLocalTrigger,
     kWaitLocalTriggerSend,
     kWaitLocalFeedback,
     // Iteration end
@@ -428,20 +426,11 @@ private:
           uint8_t ny = y + deltay[disc_neighbor_dir_];
           to_disc_neighbor_lookup_ = true;
           disc_timeout_ = iface_->millis() + kLocalNeighborLookupTimeoutMsec;
-          disc_ev1_ = Defs::CreateEvent(Defs::kLocalAssign, nx, ny);
-          disc_ev2_ = Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)disc_neighbor_dir_);
-          iface_->SendEvent(disc_ev1_);
-          disc_state_ = kWaitLocalAssignSend;
+          iface_->SendEvent(Defs::CreateEvent(Defs::kLocalAssign, nx, ny));
+          iface_->SendEvent(Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)disc_neighbor_dir_));
+          disc_state_ = kWaitLocalTriggerSend;
           return;
         }
-      case kWaitLocalAssignSend:
-        if (iface_->TxPending()) return;
-        disc_state_ = kSendLocalTrigger;
-        return;
-      case kSendLocalTrigger:
-        iface_->SendEvent(disc_ev2_);
-        disc_state_ = kWaitLocalTriggerSend;
-        return;
       case kWaitLocalTriggerSend:
         if (iface_->TxPending()) return;
         disc_state_ = kWaitLocalFeedback;
@@ -678,9 +667,6 @@ private:
 
   // Timeout used for discovery operations.
   uint32_t disc_timeout_;
-  // These events are sent out for each quadrant discovery.
-  uint64_t disc_ev1_;
-  uint64_t disc_ev2_;
 
   // Nodes that we need to go through neightbor discovery with.
   std::queue<NodeCoord> disq_;
