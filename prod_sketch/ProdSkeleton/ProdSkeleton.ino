@@ -28,19 +28,20 @@ static constexpr int kLed14Pin = PF1;
 static constexpr int kLedChA1Pin = PC14;
 static constexpr int kLedChA2Pin = PC15;
 static constexpr int kLedChA3Pin = PC13;
-const int kLedChA[] = { 0, kLedChA1Pin, kLedChA2Pin, kLedChA3Pin };
+const int kLedChA[] = { kLedChA1Pin, kLedChA2Pin, kLedChA3Pin };
 
 // These three pins have LEDs 7-12 (in charlieplexing configuration)
 static constexpr int kLedChB1Pin = PB12;
 static constexpr int kLedChB2Pin = PA15;
 static constexpr int kLedChB3Pin = PA8;
-const int kLedChB[] = { 0, kLedChB1Pin, kLedChB2Pin, kLedChB3Pin };
+const int kLedChB[] = { kLedChB1Pin, kLedChB2Pin, kLedChB3Pin };
 
 // These two pins have LEDs 15-16 (in charlieplexing configuration)
 static constexpr int kLedChC1Pin = PB14;
 static constexpr int kLedChC2Pin = PB13;
+// This pin goes to nowhere.
 static constexpr int kDbg1Pin = PB15;
-const int kLedChC[] = { 0, kLedChC1Pin, kLedChC2Pin, kDbg1Pin };
+const int kLedChC[] = { kLedChC1Pin, kLedChC2Pin, kDbg1Pin };
 
 bool leds[24] = { 0 };
 
@@ -58,21 +59,21 @@ struct CharlieProgram {
 };
 
 const CharlieProgram kCharlieProgramA[6] = {
-  { 1, 2, 3, 0 },
-  { 2, 1, 3, 1 },
-  { 1, 3, 2, 2 },
-  { 3, 1, 2, 3 },
-  { 2, 3, 1, 4 },
-  { 3, 2, 1, 5 },
+  { 0, 1, 2, 0 },
+  { 1, 0, 2, 1 },
+  { 0, 2, 1, 2 },
+  { 2, 0, 1, 3 },
+  { 1, 2, 0, 4 },
+  { 2, 1, 0, 5 },
 };
 
 const CharlieProgram kCharlieProgramB[6] = {
-  { 1, 2, 3, 0 },
-  { 2, 1, 3, 1 },
-  { 1, 3, 2, 5 },
-  { 3, 1, 2, 4 },
-  { 2, 3, 1, 3 },
-  { 3, 2, 1, 2 },
+  { 0, 1, 2, 0 },
+  { 1, 0, 2, 1 },
+  { 0, 2, 1, 5 },
+  { 2, 0, 1, 4 },
+  { 1, 2, 0, 3 },
+  { 2, 1, 0, 2 },
 };
 
 
@@ -171,40 +172,7 @@ extern bool LocalBusIsActive(Direction dir);
 // ========================================================
 
 #include "protocol-engine.h"
-
-class ProtocolEngineIfImpl : public ProtocolEngineInterface {
-  bool SendEvent(uint64_t event_id) override {
-    return ::SendEvent(event_id);
-  }
-
-  // @return the currently used alias of the local node.
-  uint16_t GetAlias() override {
-    if (openlcb::state_.init_state != openlcb::INITIALIZED) {
-      return 0;
-    }
-    return openlcb::state_.alias;
-  }
-
-  void LocalBusSignal(Direction dir, bool active) {
-    ::LocalBusSignal(dir, active);
-  }
-  bool LocalBusIsActive(Direction dir) override {
-    return ::LocalBusIsActive(dir);
-  };
-
-  uint32_t millis() override {
-    return HAL_GetTick();
-  }
-
-  bool TxPending() override {
-    return can_tx_busy();
-  }
-
-  void Reboot() override {
-    HAL_NVIC_SystemReset();
-  }
-
-} global_impl;
+#include "protocol-engine-default-plugin.h"
 
 ProtocolEngine engine;
 
