@@ -1,5 +1,4 @@
-#include "USBSerial.h"
-
+#include <queue>
 
 
 // Implement this function for handling events coming from the local bus.
@@ -1408,8 +1407,8 @@ void handle_init() {
         auto node = nmranet_nodeid();
         if (!state_.alias) {
           state_.alias = (node & 0xfff) ^ ((node >> 12) & 0xfff) ^ ((node >> 24) & 0xfff) ^ ((node >> 36) & 0xfff);
-          if (!state_.alias) { state_.alias = 1;}
-          if ((node & 0xff) == 3) { state_.alias = 1;}
+          if (!state_.alias) { state_.alias = 1; }
+          if ((node & 0xff) == 3) { state_.alias = 1; }
         } else {
           do {
             state_.alias =
@@ -1563,23 +1562,48 @@ uint64_t nmranet_nodeid() {
   return 0x050101010000 | ((*(uint8_t *)kOBHiAddress) << 8) | (*(uint8_t *)kOBLoAddress);
 }
 
+class EventQueue {
+public:
+  void SendEvent(uint64_t ev) {
+    send_queue_.push(ev);
+  }
+
+  void Loop() {
+    if (can_tx_busy()) return;
+    if (send_queue_.empty()) return;
+    if (pending_) {
+      // Perform local loopback.
+      OnGlobalEvent(send_queue_.front(), openlcb::state_.alias);
+      pending_ = false;
+      send_queue_.pop();
+    }
+    if (send_queue_.empty()) return;
+
+    // Send the next frame out.
+    struct can_frame f;
+    memset(&f, 0, sizeof(f));
+    SET_CAN_FRAME_EFF(f);
+    SET_CAN_FRAME_ID_EFF(f, 0x195b4000 | openlcb::state_.alias);
+    uint64_t ev = __builtin_bswap64(send_queue_.front());
+    memcpy(f.data, &ev, 8);
+    f.can_dlc = 8;
+    try_send_can_frame(f);
+    pending_ = true;
+  }
+
+private:
+  std::queue<uint64_t> send_queue_;
+  bool pending_{ false };
+} event_queue;
+
 
 bool SendEvent(uint64_t ev) {
-  struct can_frame f;
-  memset (&f, 0, sizeof(f));
-  SET_CAN_FRAME_EFF(f);
-  SET_CAN_FRAME_ID_EFF(f, 0x195b4000 | openlcb::state_.alias);
-  ev = __builtin_bswap64(ev);
-  memcpy(f.data, &ev, 8);
-  f.can_dlc = 8;
-  if (!try_send_can_frame(f)) {
-    SerialUSB.printf("error sending CAN frame.\n");
-    return false;
-  }
+  event_queue.SendEvent(ev);
   return true;
 }
 
 void GlobalBusLoop() {
+  event_queue.Loop();
   openlcb::openlcb_loop();
 #if 0
   struct can_frame f;

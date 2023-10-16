@@ -92,7 +92,7 @@ public:
     if (run_tick_ && millis >= tick_timeout_) {
       auto ev = Defs::CreateGlobalCmd(Defs::kEvolveAndReport);
       iface_->SendEvent(ev);
-      ::OnGlobalEvent(ev, iface_->GetAlias());
+      //::OnGlobalEvent(ev, iface_->GetAlias());
       tick_timeout_ += evolution_speed_msec_;
     }
   }
@@ -173,12 +173,16 @@ private:
     Defs::GlobalCommand gcmd = (Defs::GlobalCommand)arg;
     switch (gcmd) {
       case Defs::kReboot:
+        if (src == iface_->GetAlias()) return;
         iface_->Reboot();
         return;
       case Defs::kReInit:
-        InitState();
+        if (src != iface_->GetAlias()) {
+          InitState();
+        }
         return;
       case Defs::kInitDone:
+        if (src == iface_->GetAlias()) return;
         if (src == leader_alias_) {
           // Lost the leader.
           seen_leader_ = false;
@@ -200,6 +204,7 @@ private:
         neighbors_.resize(8);
         return;
       case Defs::kIAmLeader:
+        if (src == iface_->GetAlias()) return;
         if (is_leader_) {
           SerialUSB.printf("Seen conflicting leader me=%03x known=%03x other=%03x", iface_->GetAlias(), leader_alias_, src);
           is_leader_ = false;
@@ -209,6 +214,7 @@ private:
         leader_alias_ = src;
         return;
       case Defs::kProposeLeader:
+        if (src == iface_->GetAlias()) return;
         if (is_leader_) {
           // debunk
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
@@ -434,7 +440,7 @@ private:
         }
       case kWaitLocalAssignSend:
         if (iface_->TxPending()) return;
-        OnGlobalEvent(disc_ev1_, iface_->GetAlias());  // loopback
+        //OnGlobalEvent(disc_ev1_, iface_->GetAlias());  // loopback
         disc_state_ = kSendLocalTrigger;
         return;
       case kSendLocalTrigger:
@@ -443,7 +449,7 @@ private:
         return;
       case kWaitLocalTriggerSend:
         if (iface_->TxPending()) return;
-        OnGlobalEvent(disc_ev2_, iface_->GetAlias());  // loopback
+        //OnGlobalEvent(disc_ev2_, iface_->GetAlias());  // loopback
         disc_state_ = kWaitLocalFeedback;
         return;
       case kWaitLocalFeedback:
@@ -454,7 +460,7 @@ private:
       // end of iteration.
       case kSendNeighborReport:
         iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors));
-        OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors), iface_->GetAlias());
+        //OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors), iface_->GetAlias());
         disc_state_ = kWaitNeighborResponses;
         return;
       case kWaitNeighborResponses:
@@ -503,7 +509,7 @@ private:
               iface_->SendEvent(ev);
               if (is_leader_) {
                 // Loopback needed for this event.
-                OnGlobalEvent(ev, iface_->GetAlias());
+                //OnGlobalEvent(ev, iface_->GetAlias());
               }
             }
           }
