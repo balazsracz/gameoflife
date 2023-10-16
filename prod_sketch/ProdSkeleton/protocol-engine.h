@@ -159,6 +159,18 @@ public:
           }
         }
         return;
+      case Defs::kStateReport:
+        {
+          if (Defs::GetArg(ev) != 0) {
+            seen_non_zero_ = true;
+          }
+          uint32_t report = ev & 0xffffffffu;
+          uint64_t h = Murmur3(report, 0xa81f4f4c);
+          h <<= 32;
+          h |= Murmur3(report, 0x7d55d81a);
+          curr_hash_ |= h;
+          return;
+        }
     }
   }
 
@@ -243,6 +255,21 @@ private:
       case Defs::kStopIteration:
         run_tick_ = false;
         return;
+      case Defs::kEvolveAndReport:
+        if (curr_hash_ == last_hash_[0] || curr_hash_ == last_hash_[1] || !seen_non_zero_) {
+          // uninteresting state
+          ++num_bad_states_;
+          if (num_bad_states_ > 10 && detect_steady_state_) {
+            iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom));
+          }
+        } else {
+          num_bad_states_ = 0;
+        }
+        last_hash_[1] = last_hash_[0];
+        last_hash_[0] = curr_hash_;
+        curr_hash_ = 0;
+        seen_non_zero_ = false;
+        return;
     }
   }
 
@@ -303,6 +330,8 @@ private:
     evolution_speed_msec_ = Defs::kDefaultEvolutionSpeedMsec;
     tick_timeout_ = 0;
     run_tick_ = false;
+    num_bad_states_ = 0;
+    detect_steady_state_ = true;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -573,6 +602,39 @@ private:
     return (Direction)((((int)dir) - 1) % 4);
   }
 
+  static constexpr inline uint32_t rotl32(uint32_t x, uint32_t n) {
+    return (x << n) | (x >> (32 - n));
+  }
+
+  // Fixed implementation of murmur3-32bit for 4 byte data length.
+  uint32_t Murmur3(uint32_t data, uint32_t seed) {
+    static constexpr uint32_t c1 = 0xcc9e2d51;
+    static constexpr uint32_t c2 = 0x1b873593;
+    static constexpr unsigned r1 = 15;
+    static constexpr unsigned r2 = 13;
+    static constexpr unsigned m = 5;
+    static constexpr uint32_t n = 0xe6546b64;
+    uint32_t hash = seed;
+
+    uint32_t k = data;
+    k *= c1;
+    k = rotl32(k, r1);
+    k *= c2;
+
+    hash ^= k;
+    hash = rotl32(hash, r2);
+    hash = hash * m + n;
+
+    hash = hash ^ 4;
+    hash = hash ^ (hash >> 16);
+    hash = hash * 0x85ebca6b;
+    hash = hash ^ (hash >> 13);
+    hash = hash * 0xc2b2ae35;
+    hash = hash ^ (hash >> 16);
+
+    return hash;
+  }
+
   using NodeCoord = uint16_t;
 
   static constexpr uint8_t GetCoordX(const NodeCoord& c) {
@@ -658,6 +720,12 @@ private:
   bool disc_catchup_pending_ : 1;
   // True if we should be emitting tick messages.
   bool run_tick_ : 1;
+  // Whether we want steady state and dead-field detection.
+  bool detect_steady_state_ : 1;
+  // True if in the current iteration we've seen a nonzero state.
+  bool seen_non_zero_ : 1;
+  // how many consecutive states we've seen that seems uninteresting.
+  unsigned num_bad_states_ : 4;
 
   // Last direction we queried for the node in the head of the queue. -1 .. 3.
   int disc_neighbor_dir_ : 4;
@@ -675,4 +743,8 @@ private:
   };
   std::map<NodeCoord, NodeInfo> known_nodes_;
 
+  // Hash values of recent history. Not implemented yet.
+  //std::vector<uint64_t> hash_history_;
+  uint64_t curr_hash_;
+  uint64_t last_hash_[3];
 };  // class ProtocolEngine
