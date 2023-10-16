@@ -1,3 +1,6 @@
+#ifndef _LOCAL_BUS_H_
+#define _LOCAL_BUS_H_
+
 #include "wiring_digital.h"
 #include "digital_io.h"
 
@@ -100,3 +103,5 @@ bool LocalBusIsActive(Direction dir) {
 }
 
 void LocalBusLoop() {}
+
+#endif // _LOCAL_BUS_H_

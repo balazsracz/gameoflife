@@ -1,3 +1,6 @@
+#ifndef _GLOBAL_BUS_H_
+#define _GLOBAL_BUS_H_
+
 #include <queue>
 
 
@@ -1622,3 +1625,5 @@ void GlobalBusLoop() {
   }
 #endif
 }
+
+#endif // _GLOBAL_BUS_H_

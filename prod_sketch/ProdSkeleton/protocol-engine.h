@@ -1,3 +1,6 @@
+#ifndef _PROTOCOL_ENGINE_H_
+#define _PROTOCOL_ENGINE_H_
+
 #include "protocol-defs.h"
 
 #include <queue>
@@ -28,6 +31,8 @@ public:
 
 class ProtocolEngine {
 public:
+  static constexpr unsigned kDeadBoardIterationThreshold = 10;
+
   ProtocolEngine() {
   }
 
@@ -259,7 +264,7 @@ private:
         if (curr_hash_ == last_hash_[0] || curr_hash_ == last_hash_[1] || !seen_non_zero_) {
           // uninteresting state
           ++num_bad_states_;
-          if (num_bad_states_ > 10 && detect_steady_state_) {
+          if (num_bad_states_ > kDeadBoardIterationThreshold && detect_steady_state_) {
             iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom));
           }
         } else {
@@ -330,7 +335,7 @@ private:
     evolution_speed_msec_ = Defs::kDefaultEvolutionSpeedMsec;
     tick_timeout_ = 0;
     run_tick_ = false;
-    num_bad_states_ = 0;
+    num_bad_states_ = kDeadBoardIterationThreshold - 2;
     detect_steady_state_ = true;
   }
 
@@ -748,3 +753,5 @@ private:
   uint64_t curr_hash_;
   uint64_t last_hash_[3];
 };  // class ProtocolEngine
+
+#endif // _PROTOCOL_ENGINE_H_
