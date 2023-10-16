@@ -137,21 +137,6 @@ void Timer6000Hz() {
 void Timer4Hz() {
   static int ctr = 0;
   ++ctr;
-#if 0
-  memset(leds, 0, sizeof(leds));
-  leds[ctr % 16] = 1;
-  SerialUSB.printf("%08x %08x %d conv_count=%d next_conv_tick=%d\n", *((uint32_t*)btn_row_active),
-                   *((uint32_t*)btn_col_active), HAL_GetTick(), conv_count, next_conv_tick);
-  if ((btn_col_active[1] || btn_col_active[2]) && (btn_row_active[1] || btn_row_active[2])) {
-    uint64_t ev = ProtocolDefs::kEventPrefix;
-    if (btn_col_active[1]) ev += 6;
-    else if (btn_col_active[2]) ev += 7;
-    if (btn_row_active[2]) ev |= 4;
-    ev -= 1;
-    SendEvent(ev);
-    SerialUSB.printf("event sent: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
-  }
-#endif
 }
 
 
