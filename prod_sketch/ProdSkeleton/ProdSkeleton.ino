@@ -177,10 +177,6 @@ class ProtocolEngineIfImpl : public ProtocolEngineInterface {
     return ::SendEvent(event_id);
   }
 
-  void LoopbackEvent(uint64_t event_id) override {
-    ::OnGlobalEvent(event_id, GetAlias());
-  }
-
   // @return the currently used alias of the local node.
   uint16_t GetAlias() override {
     if (openlcb::state_.init_state != openlcb::INITIALIZED) {

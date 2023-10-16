@@ -10,9 +10,6 @@ public:
   // @return true if the message was sent, false if it was dropped.
   virtual bool SendEvent(uint64_t event_id) = 0;
 
-  // Send an event for loopback.
-  virtual void LoopbackEvent(uint64_t event_id) = 0;
-
   // @return the currently used alias of the local node,  or 0 if the node is not initialized yet.
   virtual uint16_t GetAlias() = 0;
 
@@ -92,7 +89,6 @@ public:
     if (run_tick_ && millis >= tick_timeout_) {
       auto ev = Defs::CreateGlobalCmd(Defs::kEvolveAndReport);
       iface_->SendEvent(ev);
-      //::OnGlobalEvent(ev, iface_->GetAlias());
       tick_timeout_ += evolution_speed_msec_;
     }
   }
@@ -440,7 +436,6 @@ private:
         }
       case kWaitLocalAssignSend:
         if (iface_->TxPending()) return;
-        //OnGlobalEvent(disc_ev1_, iface_->GetAlias());  // loopback
         disc_state_ = kSendLocalTrigger;
         return;
       case kSendLocalTrigger:
@@ -449,7 +444,6 @@ private:
         return;
       case kWaitLocalTriggerSend:
         if (iface_->TxPending()) return;
-        //OnGlobalEvent(disc_ev2_, iface_->GetAlias());  // loopback
         disc_state_ = kWaitLocalFeedback;
         return;
       case kWaitLocalFeedback:
@@ -460,7 +454,6 @@ private:
       // end of iteration.
       case kSendNeighborReport:
         iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors));
-        //OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kReportNeighbors), iface_->GetAlias());
         disc_state_ = kWaitNeighborResponses;
         return;
       case kWaitNeighborResponses:
@@ -507,10 +500,6 @@ private:
             if (my_x_ != INVALID_COORD && my_y_ != INVALID_COORD) {
               auto ev = Defs::CreateEvent(Defs::kLocalSpurious, my_x_, my_y_);
               iface_->SendEvent(ev);
-              if (is_leader_) {
-                // Loopback needed for this event.
-                //OnGlobalEvent(ev, iface_->GetAlias());
-              }
             }
           }
           known_local_signal_ |= dir_bit;
