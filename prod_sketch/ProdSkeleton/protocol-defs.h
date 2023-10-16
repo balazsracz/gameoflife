@@ -226,7 +226,4 @@ private:
   ProtocolDefs();
 };  // struct ProtocolDefs
 
-
-
-
 #endif  //_GOL_PROTOCOL_DEFS_H_

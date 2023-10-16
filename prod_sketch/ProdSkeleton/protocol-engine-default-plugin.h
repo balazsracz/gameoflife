@@ -37,6 +37,6 @@ class ProtocolEngineIfImpl : public ProtocolEngineInterface {
     HAL_NVIC_SystemReset();
   }
 
-} global_impl;
+};
 
 #endif // _PROTOCOL_ENGINE_DEFAULT_PLUGIN_H_
