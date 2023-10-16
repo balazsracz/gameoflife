@@ -1566,6 +1566,9 @@ class EventQueue {
 public:
   void SendEvent(uint64_t ev) {
     send_queue_.push(ev);
+    if (!pending_) {
+      Loop();
+    }
   }
 
   void Loop() {
