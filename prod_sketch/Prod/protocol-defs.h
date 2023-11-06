@@ -56,6 +56,8 @@ public:
     kDeclareLeader = 0xF7,
     // Found an unannounced local signal. x,y are the source node that found this, arg unused.
     kLocalSpurious = 0xF8,
+    // Firmware upgrade data. There are four bytes of firmware payload in this message (in x, y and args fields).
+    kFirmwareData = 0xF9,
     // Requests a local signal to be toggled. dir is the lowest two bits of the command. x,y are the target coordinate. Arg unused. Sent by the leader.
     kToggleLocalSignal = 0xEC,
     // Reports who is our neighbor. x,y, are the source (reporting) node. argx-argy are the neighbor node. dir of the reporting node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the node.
@@ -100,6 +102,12 @@ public:
     kStartIteration = 12,
     // Set state to a random bitset.
     kSetStateRandom = 13,
+    // Enter firmware upgrade mode.
+    kEnterFirmware = 14,
+    // Finsh a firmware upgrade.
+    kStartFirmware = 15,
+    // Finsh a firmware upgrade.
+    kFinishFirmware = 16,    
   };
 
   // Checks if an event belong to this protocol.

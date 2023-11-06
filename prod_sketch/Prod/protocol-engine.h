@@ -194,6 +194,9 @@ private:
           InitState();
         }
         return;
+      case Defs::kEnterFirmware:
+        EnterBootloader();
+        return;
       case Defs::kInitDone:
         if (src == iface_->GetAlias()) return;
         if (src == leader_alias_) {
@@ -754,4 +757,4 @@ private:
   uint64_t last_hash_[3];
 };  // class ProtocolEngine
 
-#endif // _PROTOCOL_ENGINE_H_
+#endif  // _PROTOCOL_ENGINE_H_

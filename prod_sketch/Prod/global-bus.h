@@ -18,6 +18,7 @@ extern void GlobalBusSetup();
 // Call this function from the loop() handler.
 extern void GlobalBusLoop();
 
+extern void EnterBootloader();
 
 // ============================ IMPLEMENTATION =========================
 
@@ -1351,8 +1352,8 @@ void handle_input_frame() {
     if (state_.output_frame_full) {
       return;  // re-try.
     }
-    if (dlc > 1 && state_.input_frame.data[0] == DatagramDefs::CONFIGURATION) {
-      return reject_datagram();
+    if (dlc > 2 && state_.input_frame.data[0] == DatagramDefs::CONFIGURATION && state_.input_frame.data[1] == 0xA1) {
+      EnterBootloader();
     } else {
       return reject_datagram();
     }
@@ -1608,6 +1609,22 @@ bool SendEvent(uint64_t ev) {
   return true;
 }
 
+void EnterBootloader() {
+  // Start bootloader
+  asm(" cpsid i\n");
+  uint32_t *rqb = (uint32_t *)0x20000000;
+  *rqb = 0x76b89b1eU;
+  // clear all interrupt enable bits.
+  NVIC->ICER[0] = 0xffffffffu;
+  asm volatile(" mov   r3, %[flash_addr] \n"
+               :
+               : [flash_addr] "r"(0x0801e000));
+  asm volatile(" ldr r0, [r3]\n"
+               " mov sp, r0\n"
+               " ldr r0, [r3, #4]\n"
+               " bx  r0\n");
+}
+
 void GlobalBusLoop() {
   event_queue.Loop();
   openlcb::openlcb_loop();
@@ -1626,4 +1643,4 @@ void GlobalBusLoop() {
 #endif
 }
 
-#endif // _GLOBAL_BUS_H_
+#endif  // _GLOBAL_BUS_H_
