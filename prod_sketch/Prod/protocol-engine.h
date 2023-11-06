@@ -82,6 +82,9 @@ public:
       // Let's trigger a leader election.
       ParticipateLeaderElection();
     }
+    if (to_leader_election_ && millis >= idle_timeout_) {
+      TimeoutLeaderElection();
+    }
     if (need_full_discovery_ && disc_state_ == kNotRunning) {
       disc_state_ = kStartFullDiscovery;
       need_full_discovery_ = false;
@@ -104,6 +107,9 @@ public:
   void OnGlobalEvent(int64_t ev, uint16_t src) {
     if (!Defs::IsProtocolEvent(ev)) return;
     idle_timeout_ = iface_->millis() + 10;
+    if (to_leader_election_) {
+      SetElectionTimeout();
+    }
     Defs::Command cmd = Defs::GetCommand(ev);
     switch (cmd) {
       case Defs::kGlobalCmd:
@@ -202,7 +208,7 @@ private:
         if (src == leader_alias_) {
           // Lost the leader.
           seen_leader_ = false;
-          leader_alias_ = 0xF000;
+          leader_alias_ |= 0xF000;
         } else if (is_leader_) {
           // Tell the new node that we are the leader.
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
@@ -224,6 +230,7 @@ private:
         if (is_leader_) {
           SerialUSB.printf("Seen conflicting leader me=%03x known=%03x other=%03x", iface_->GetAlias(), leader_alias_, src);
           is_leader_ = false;
+          GlobalBusCancelPendingTx();
         }
         seen_leader_ = true;
         to_leader_election_ = false;
@@ -264,14 +271,16 @@ private:
         run_tick_ = false;
         return;
       case Defs::kEvolveAndReport:
-        if (curr_hash_ == last_hash_[0] || curr_hash_ == last_hash_[1] || !seen_non_zero_) {
-          // uninteresting state
-          ++num_bad_states_;
-          if (num_bad_states_ > kDeadBoardIterationThreshold && detect_steady_state_) {
-            iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom));
+        if (is_leader_) {
+          if (curr_hash_ == last_hash_[0] || curr_hash_ == last_hash_[1] || !seen_non_zero_) {
+            // uninteresting state
+            ++num_bad_states_;
+            if (num_bad_states_ > kDeadBoardIterationThreshold && detect_steady_state_) {
+              iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom));
+            }
+          } else {
+            num_bad_states_ = 0;
           }
-        } else {
-          num_bad_states_ = 0;
         }
         last_hash_[1] = last_hash_[0];
         last_hash_[0] = curr_hash_;
@@ -288,20 +297,21 @@ private:
       CancelLocalSignal();
       to_cancel_local_signal_ = false;
     }
-    if (to_leader_election_) {
-      // Leader election complete.
-      to_leader_election_ = false;
-      idle_timeout_ = iface_->millis() + 10;
-      iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
-      if (leader_alias_ == iface_->GetAlias()) {
-        is_leader_ = true;
-        need_full_discovery_ = true;
-        seen_leader_ = true;
-        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
-        SerialUSB.printf("I am leader %03x\n", leader_alias_);
-      } else {
-        SerialUSB.printf("Leader is %03x\n", leader_alias_);
-      }
+  }
+
+  void TimeoutLeaderElection() {
+    // Leader election complete.
+    to_leader_election_ = false;
+    idle_timeout_ = iface_->millis() + 10;
+    iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
+    if (leader_alias_ == iface_->GetAlias()) {
+      is_leader_ = true;
+      need_full_discovery_ = true;
+      seen_leader_ = true;
+      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
+      SerialUSB.printf("I am leader %03x\n", leader_alias_);
+    } else {
+      SerialUSB.printf("Leader is %03x\n", leader_alias_);
     }
   }
 
@@ -317,6 +327,7 @@ private:
 
   // Restores the internal state to a fresh boot.
   void InitState() {
+    GlobalBusCancelPendingTx();
     to_cancel_local_signal_ = false;
     to_leader_election_ = false;
     to_disc_neighbor_lookup_ = false;
@@ -364,7 +375,7 @@ private:
   // Sets the timeout to the idle delay from this leader election message.
   void SetElectionTimeout() {
     to_leader_election_ = true;
-    timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
+    idle_timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
   }
 
   // Checks if a node is known or not. If not known, adds the node to known and enqueues it for neighbor discovery.
