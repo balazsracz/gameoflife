@@ -179,7 +179,7 @@ public:
           uint64_t h = Murmur3(report, 0xa81f4f4c);
           h <<= 32;
           h |= Murmur3(report, 0x7d55d81a);
-          curr_hash_ |= h;
+          curr_hash_ ^= h;
           return;
         }
     }
