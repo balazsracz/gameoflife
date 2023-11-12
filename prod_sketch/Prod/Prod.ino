@@ -292,6 +292,7 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
 }
 
 void setup() {
+  srand(nmranet_nodeid());
   // put your setup code here, to run once:
   TimerSetup();
   TouchSetup();
