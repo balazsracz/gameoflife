@@ -1,3 +1,4 @@
+#include "stm32f072xb.h"
 #ifndef _GLOBAL_BUS_H_
 #define _GLOBAL_BUS_H_
 
@@ -158,6 +159,26 @@ bool can_tx_busy() {
 
 void GlobalBusCancelPendingTx() {
   CAN->TSR |= CAN_TSR_ABRQ0 | CAN_TSR_ABRQ1 | CAN_TSR_ABRQ2;
+}
+
+uint32_t last_bus_off_millis = -1;
+
+/// Checks if we are in bus off state, i.e. when there is noone to receive the packets
+/// we are sending. Cancels pending sends after 1 msec.
+void check_for_bus_off() {
+  auto m = millis();
+  // If any of the warning/error-passive/bus-off conditions is true, the last transmission resulted in an error and we have
+  // pending TX messages.
+  if ((CAN->ESR & (CAN_ESR_EPVF | CAN_ESR_BOFF | CAN_ESR_EWGF)) && ((CAN->ESR & CAN_ESR_LEC_Msk) != 0) && can_tx_busy()) {
+    // After 1 msec we drop the packets to the floor.
+    if (last_bus_off_millis < m) {
+      GlobalBusCancelPendingTx();
+    }
+    last_bus_off_millis = m;
+  } else {
+    // Set to guard value.
+    last_bus_off_millis = -1;
+  }
 }
 
 bool try_send_can_frame(const struct can_frame &can_frame) {
@@ -1634,6 +1655,7 @@ void EnterBootloader() {
 }
 
 void GlobalBusLoop() {
+  check_for_bus_off();
   event_queue.Loop();
   openlcb::openlcb_loop();
 #if 0
