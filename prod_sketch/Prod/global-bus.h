@@ -19,6 +19,7 @@ extern void GlobalBusSetup();
 // Call this function from the loop() handler.
 extern void GlobalBusLoop();
 
+// Restarts the board in bootloader mode.
 extern void EnterBootloader();
 
 // Cancels sending any messages that might be enqueued.
@@ -1654,23 +1655,19 @@ void EnterBootloader() {
                " bx  r0\n");
 }
 
+extern bool btn_row_active[4];
+// These variables are set to true when a given column in the key matrix is active (has a finger somewhere).
+extern bool btn_col_active[4];
+
 void GlobalBusLoop() {
   check_for_bus_off();
   event_queue.Loop();
   openlcb::openlcb_loop();
-#if 0
-  struct can_frame f;
-  if (read_can_frame(&f) && IS_CAN_FRAME_EFF(f) && f.can_dlc == 8) {
-    uint32_t id = GET_CAN_FRAME_ID_EFF(f);
-    if ((id & ~0xFFF) == 0x195b4000) {
-      // Event arrived.
-      uint64_t ev = 0;
-      memcpy(&ev, f.data, 8);
-      ev = __builtin_bswap64(ev);
-      OnGlobalEvent(ev);
-    }
+  // menu + 15 enters the bootloader.
+  if (btn_row_active[0] && !btn_row_active[1] && btn_row_active[2] && btn_row_active[3] &&
+    !btn_col_active[0] && !btn_col_active[1] && !btn_col_active[2] && btn_col_active[3]) {
+    EnterBootloader();
   }
-#endif
 }
 
 #endif  // _GLOBAL_BUS_H_
