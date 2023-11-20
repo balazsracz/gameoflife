@@ -287,6 +287,13 @@ private:
         curr_hash_ = 0;
         seen_non_zero_ = false;
         return;
+      case Defs::kReportCalibration: {
+        extern uint64_t channel_sum[2][4];
+        extern unsigned channel_count[2][4];
+        uint8_t x = (channel_sum[0][0] / channel_count[0][0]) >> 4;
+        uint8_t y = (channel_sum[0][2] / channel_count[0][2]) >> 4;
+        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, x, y, Defs::kCalibrationData));
+      }
     }
   }
 

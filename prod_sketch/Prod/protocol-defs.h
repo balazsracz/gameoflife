@@ -128,6 +128,10 @@ public:
     kStartFirmware = 15,
     // Finsh a firmware upgrade.
     kFinishFirmware = 16,
+    // Requests to report calibration values for touch sensor
+    kReportCalibration = 17,
+    // Data from touch sensor calibration in X/Y arguments.
+    kCalibrationData = 18,
   };
 
   // Checks if an event belong to this protocol.
