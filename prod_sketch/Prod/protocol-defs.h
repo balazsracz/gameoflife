@@ -40,29 +40,49 @@ public:
   enum Command {
     // Global command without any arguments. no x,y, arg is the command.
     kGlobalCmd = 0xFF,
-    // Reports the current state of a node. x,y defines the node. arg is 16-bit for the node's state. Sent by each node.
+    // Reports the current state of a node. x,y defines the node. arg is 16-bit
+    // for the node's state. Sent by each node.
     kStateReport = 0xF0,
-    // Overrides the state of a node. x,y defines the node. arg is 16-bit for the node's state. Sent by an external configuring agent.
+    // Overrides the state of a node. x,y defines the node. arg is 16-bit for
+    // the node's state. Sent by an external configuring agent.
     kStateSet = 0xF4,
-    // Modifies the state of a node by adding certain cells (with an OR operator). x,y defines the node. arg is 16-bit for the bits to set in the node's state. Sent by an external configuring agent.
+    // Modifies the state of a node by adding certain cells (with an OR
+    // operator). x,y defines the node. arg is 16-bit for the bits to set in
+    // the node's state. Sent by an external configuring agent.
     kStateOr = 0xF5,
-    // Listen for a local signal and set the coordinates. x,y are the new coordinates. arg unused. Sent by the leader.
+    // Listen for a local signal and set the coordinates. x,y are the new
+    // coordinates. arg unused. Sent by the leader.
     kLocalAssign = 0xF2,
-    // Reports that the local signal was received, and coordinates are now assigned. x,y are the new coordinates. Arg unused. Sent by the node. This might be not matching the coordinates in kLocalAssign if there is a coordinate conflict.
+    // Reports that the local signal was received, and coordinates are now
+    // assigned. x,y are the new coordinates. Arg unused. Sent by the
+    // node. This might be not matching the coordinates in kLocalAssign if
+    // there is a coordinate conflict.
     kLocalFound = 0xF3,
-    // Reports that there are conflicting coordinates from a local assign. x,y are the old coordinates (which stay in effect). ArgX, ArgY are the new coordinates (that were not assigned). Sent by the node.
+    // Reports that there are conflicting coordinates from a local assign. x,y
+    // are the old coordinates (which stay in effect). ArgX, ArgY are the new
+    // coordinates (that were not assigned). Sent by the node.
     kLocalConflict = 0xF6,
-    // Reports who the leader is (according to the sender as an observer). x,y are unused, arg is the alias of the leader.
+    // Reports who the leader is (according to the sender as an observer). x,y
+    // are unused, arg is the alias of the leader.
     kDeclareLeader = 0xF7,
-    // Found an unannounced local signal. x,y are the source node that found this, arg unused.
+    // Found an unannounced local signal. x,y are the source node that found
+    // this, arg unused.
     kLocalSpurious = 0xF8,
-    // Firmware upgrade data. There are four bytes of firmware payload in this message (in x, y and args fields).
+    // Firmware upgrade data. There are four bytes of firmware payload in this
+    // message (in x, y and args fields).
     kFirmwareData = 0xF9,
-    // Requests a local signal to be toggled. dir is the lowest two bits of the command. x,y are the target coordinate. Arg unused. Sent by the leader.
+    // Requests a local signal to be toggled. dir is the lowest two bits of the
+    // command. x,y are the target coordinate. Arg unused. Sent by the leader.
     kToggleLocalSignal = 0xEC,
-    // Reports who is our neighbor. x,y, are the source (reporting) node. argx-argy are the neighbor node. dir of the reporting node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the node.
+    // Reports who is our neighbor. x,y, are the source (reporting)
+    // node. argx-argy are the neighbor node. dir of the reporting node is the
+    // lowest two bits of the command. The neighbor's direction is the bits 2-3
+    // of the command. Sent by the node.
     kReportNeighbor = 0xD0,
-    // Sets who is our neighbor. x,y, are the target node (to change). argx-argy are the neighbor node. dir of the target node is the lowest two bits of the command. The neighbor's direction is the bits 2-3 of the command. Sent by the leader.
+    // Sets who is our neighbor. x,y, are the target node (to
+    // change). argx-argy are the neighbor node. dir of the target node is the
+    // lowest two bits of the command. The neighbor's direction is the bits 2-3
+    // of the command. Sent by the leader.
     kSetNeighbor = 0xC0,
 
     // These commands have no argument in the cmd byte.
@@ -107,7 +127,7 @@ public:
     // Finsh a firmware upgrade.
     kStartFirmware = 15,
     // Finsh a firmware upgrade.
-    kFinishFirmware = 16,    
+    kFinishFirmware = 16,
   };
 
   // Checks if an event belong to this protocol.
