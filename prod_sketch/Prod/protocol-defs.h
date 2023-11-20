@@ -71,6 +71,9 @@ public:
     // Firmware upgrade data. There are four bytes of firmware payload in this
     // message (in x, y and args fields).
     kFirmwareData = 0xF9,
+    // Reports that a button was pressed. Button number is arg, x, y are the
+    // location of the cell. Button 0..15 are leds, 16 is the menu button.
+    kButtonPressed = 0xFA,
     // Requests a local signal to be toggled. dir is the lowest two bits of the
     // command. x,y are the target coordinate. Arg unused. Sent by the leader.
     kToggleLocalSignal = 0xEC,

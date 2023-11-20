@@ -211,9 +211,9 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
           for (int r = 1; r <= 4; ++r) {
             for (int c = 1; c <= 4; ++c) {
               next_state[r][c] = (rand() % 100) < 40;
-              leds[(r - 1) * 4 + (c-1)] = next_state[r][c];
+              leds[(r - 1) * 4 + (c - 1)] = next_state[r][c];
               if (next_state[r][c]) {
-                report |= 1u << ((r - 1) * 4 + (c-1));
+                report |= 1u << ((r - 1) * 4 + (c - 1));
               }
             }
           }
@@ -291,6 +291,51 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
   }
 }
 
+// Bit mask, bits 0..3 are rows active, bits 4..7 are columns active.
+unsigned last_button_press = 0;
+// timestamp when last the button count was incremented
+unsigned last_button_millis = -1;
+// how many millis are the buttons stable
+unsigned last_button_count = 0;
+
+void ReportButton() {
+  using Defs = ::ProtocolDefs;
+  unsigned num_r = (last_button_press & 1) + ((last_button_press >> 1) & 1) + ((last_button_press >> 2) & 1) + ((last_button_press >> 3) & 1);
+  unsigned num_c = ((last_button_press >> 4) & 1) + ((last_button_press >> 5) & 1) + ((last_button_press >> 6) & 1) + ((last_button_press >> 7) & 1);
+  int r = __builtin_ctz(last_button_press | 0x100);
+  int c = __builtin_ctz((last_button_press >> 4) | 0x100);
+  if (num_r == 1 && num_c == 1 &&  r < 4 && c < 4) {
+    int btn = r * 4 + c; // 0..15
+    SendEvent(Defs::CreateEvent(Defs::kButtonPressed, engine.GetX(), engine.GetY(), btn));
+  } else if (last_button_press == 0b0101) {
+    // Menu button is row 0 and row 2 together.
+    SendEvent(Defs::CreateEvent(Defs::kButtonPressed, engine.GetX(), engine.GetY(), 16));
+  }
+}
+
+static constexpr unsigned kQuiescentButtonMillis = 20;
+
+void ProcessButtons() {
+  unsigned current_press = 0;
+  for (unsigned rc = 0; rc < 4; ++rc) {
+    if (btn_row_active[rc]) current_press |= (0x01u << rc);
+    if (btn_col_active[rc]) current_press |= (0x10u << rc);
+  }
+  auto m = millis();
+  if (current_press != last_button_press) {
+    last_button_press = current_press;
+    last_button_count = 0;
+    last_button_millis = m;
+  }
+  if (m > last_button_millis) {
+    ++last_button_count;
+    last_button_millis = m;
+    if (last_button_count == kQuiescentButtonMillis) {
+      ReportButton();
+    }
+  }
+}
+
 void setup() {
   srand(nmranet_nodeid());
   // put your setup code here, to run once:
@@ -312,6 +357,8 @@ void loop() {
   GlobalBusLoop();
   LocalBusLoop();
   engine.Loop();
+
+  ProcessButtons();
 
   digitalWrite(kLed13Pin, !leds[13 - 1]);
   digitalWrite(kLed14Pin, !leds[14 - 1]);
