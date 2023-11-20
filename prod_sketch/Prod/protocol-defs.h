@@ -74,6 +74,9 @@ public:
     // Reports that a button was pressed. Button number is arg, x, y are the
     // location of the cell. Button 0..15 are leds, 16 is the menu button.
     kButtonPressed = 0xFA,
+    // Reports the current addresses. x, y are the local address. Arg is the
+    // node ID's last 16 bits.
+    kCurrentAddressReport = 0xFB,
     // Requests a local signal to be toggled. dir is the lowest two bits of the
     // command. x,y are the target coordinate. Arg unused. Sent by the leader.
     kToggleLocalSignal = 0xEC,
@@ -125,6 +128,8 @@ public:
     kStartIteration = 12,
     // Set state to a random bitset.
     kSetStateRandom = 13,
+    // Set the state to all off.
+    kClearState = 19,
     // Enter firmware upgrade mode.
     kEnterFirmware = 14,
     // Finsh a firmware upgrade.
@@ -135,6 +140,10 @@ public:
     kReportCalibration = 17,
     // Data from touch sensor calibration in X/Y arguments.
     kCalibrationData = 18,
+    // Reports x-y and address low byte.
+    kReportAddress = 20,
+
+    // next = 21.
   };
 
   // Checks if an event belong to this protocol.

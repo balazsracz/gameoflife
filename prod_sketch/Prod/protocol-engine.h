@@ -16,6 +16,9 @@ public:
   // @return the currently used alias of the local node,  or 0 if the node is not initialized yet.
   virtual uint16_t GetAlias() = 0;
 
+  // @return the hardware's global address
+  virtual uint64_t GetGlobalAddress() = 0;
+  
   virtual void LocalBusSignal(Direction dir, bool active) = 0;
   virtual bool LocalBusIsActive(Direction dir) = 0;
 
@@ -41,6 +44,10 @@ public:
   }
   uint8_t GetY() {
     return my_y_;
+  }
+
+  bool ShouldBlinkMenu() {
+    return is_leader_ && menu_active_;
   }
 
   // Call this function once from setup().
@@ -182,6 +189,18 @@ public:
           curr_hash_ ^= h;
           return;
         }
+      case Defs::kButtonPressed:
+        if (!is_leader_) {
+          return;
+        }
+        if (Defs::GetArg(ev) == 16) {
+          // menu button
+          menu_active_ = !menu_active_;
+          menu_selected_ = kMenuNone;
+        } else {
+          ExecuteButton(Defs::GetX(ev), Defs::GetY(ev), Defs::GetArg(ev));
+        }
+        return;
     }
   }
 
@@ -293,6 +312,11 @@ private:
         uint8_t x = (channel_sum[0][0] / channel_count[0][0]) >> 4;
         uint8_t y = (channel_sum[0][2] / channel_count[0][2]) >> 4;
         iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, x, y, Defs::kCalibrationData));
+        return;
+      }
+      case Defs::kReportAddress: {
+        iface_->SendEvent(Defs::CreateEvent(Defs::kCurrentAddressReport, GetX(), GetY(), iface_->GetGlobalAddress() & 0xffffu));
+        return;
       }
     }
   }
@@ -358,6 +382,8 @@ private:
     run_tick_ = false;
     num_bad_states_ = kDeadBoardIterationThreshold - 2;
     detect_steady_state_ = true;
+    menu_active_ = false;
+    menu_selected_ = kMenuNone;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -628,6 +654,99 @@ private:
     return (Direction)((((int)dir) - 1) % 4);
   }
 
+  // No menu entry selected.
+  static constexpr unsigned kMenuNone = 16;
+  // These buttons set the table's speed.
+  static constexpr unsigned kMenuSpeed025 = 4;
+  static constexpr unsigned kMenuSpeed05 = 5;
+  static constexpr unsigned kMenuSpeed1 = 6;
+  static constexpr unsigned kMenuSpeed10 = 7;
+
+  // Turns off iteration.
+  static constexpr unsigned kMenuStop = 0;
+  // Turns on iteration.
+  static constexpr unsigned kMenuStart = 1;
+  // One iteration step.
+  static constexpr unsigned kMenuStep = 2;
+  // Random board
+  static constexpr unsigned kMenuRandom = 3;
+
+  // After this: every button pressed will add that bit to the pattern.
+  static constexpr unsigned kSetBit = 8;
+
+  // Pressing a button will add three horizontal bits from the given place.
+  static constexpr unsigned kAddTrio = 9;
+
+  // Clear the entire board.
+  static constexpr unsigned kMenuEmpty = 11;
+  
+  
+  void ExitMenu() {
+    menu_active_ = 0;
+    menu_selected_ = kMenuNone;
+  }
+  
+  void ExecuteButton(int x, int y, unsigned btn) {
+    if (menu_selected_ == kMenuNone) {
+      menu_selected_ = btn;
+      switch(menu_selected_) {
+        case kMenuStop:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStopIteration));
+          return ExitMenu();
+        case kMenuStart:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStartIteration));
+          return ExitMenu();
+        case kMenuStep:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kEvolveAndReport));
+          return ExitMenu();
+        case kMenuRandom:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kSetStateRandom));
+          return ExitMenu();
+      }
+    } else {
+      switch(menu_selected_) {
+        case kSetBit:
+          AddBit(x, y, 0, 0, btn);
+          return;
+        case kAddTrio:
+          AddBit(x, y, 0, 0, btn);
+          AddBit(x, y, 1, 0, btn);
+          AddBit(x, y, 2, 0, btn);
+          return;
+        default:
+          return ExitMenu();
+      }
+    }
+  }
+
+  /// Sends out a message to add one bit to the board.
+  /// @param x board address x
+  /// @param y board address y
+  /// @param btn what is the origin (0..15, row/col)
+  /// @param dx where compared to the origin (plus: east)
+  /// @param dy where compared to the origin (plus:south)
+  void AddBit(uint8_t x, uint8_t y, int dx, int dy, unsigned btn) {
+    int r = (btn / 4) + dy;
+    int c = (btn % 4) + dx;
+    while (r >= 4) {
+      y++;
+      r -= 4;
+    }
+    while (r < 0) {
+      y--;
+      r += 4;
+    }
+    while (c >= 4) {
+      x++;
+      c -= 4;
+    }
+    while (c < 0) {
+      x--;
+      c += 4;
+    }
+    iface_->SendEvent(Defs::CreateEvent(Defs::kStateOr, x, y, 1u<<((r*4)+c)));
+  }  
+  
   static constexpr inline uint32_t rotl32(uint32_t x, uint32_t n) {
     return (x << n) | (x >> (32 - n));
   }
@@ -752,6 +871,11 @@ private:
   bool seen_non_zero_ : 1;
   // how many consecutive states we've seen that seems uninteresting.
   unsigned num_bad_states_ : 4;
+
+  // menu is active
+  bool menu_active_ : 1;
+  // What menu item is selected right now.
+  uint8_t menu_selected_ : 5;
 
   // Last direction we queried for the node in the head of the queue. -1 .. 3.
   int disc_neighbor_dir_ : 4;

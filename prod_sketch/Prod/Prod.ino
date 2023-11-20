@@ -133,10 +133,14 @@ void Timer6000Hz() {
   CharlieApply(kCharlieProgramB, kLedChB, &leds[6], state);
   CharlieApply(kCharlieProgramA, kLedChC, &leds[14], state);
 }
+
+void MenuBlink(int counter);
+
 // This function will be called 4 times per second by the timer.
 void Timer4Hz() {
   static int ctr = 0;
   ++ctr;
+  MenuBlink(ctr);
 }
 
 
@@ -173,6 +177,21 @@ static constexpr Delta neighbors[8] = {
   { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 }, { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 }
 };
 
+void MenuBlink(int ctr) {
+  static bool blinking = false;
+
+  if (engine.ShouldBlinkMenu()) {
+    leds[0] = leds[3] = leds[12] = leds[15] = (ctr % 2);
+    blinking = true;
+  } else if (blinking) {
+    blinking = false;
+    leds[0] = state[1][1];
+    leds[3] = state[1][4];
+    leds[12] = state[4][1];
+    leds[15] = state[4][4];
+  }
+}
+
 void OnGlobalEvent(uint64_t ev, uint16_t src) {
   using Defs = ::ProtocolDefs;
   SerialUSB.printf("event arrived: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
@@ -199,6 +218,7 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
               }
             }
           }
+          static_assert(sizeof(state) == 36, " error size ");
           memcpy(state, next_state, sizeof(state));
           SendEvent(Defs::CreateEvent(Defs::kStateReport, engine.GetX(), engine.GetY(), report));
           break;
@@ -218,6 +238,14 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
             }
           }
           memcpy(state, next_state, sizeof(state));
+          SendEvent(Defs::CreateEvent(Defs::kStateReport, engine.GetX(), engine.GetY(), report));
+          break;
+        }
+      case Defs::kClearState:
+        {
+          memset(state, 0, sizeof(state));
+          memset(next_state, 0, sizeof(next_state));
+          uint16_t report = 0;
           SendEvent(Defs::CreateEvent(Defs::kStateReport, engine.GetX(), engine.GetY(), report));
           break;
         }
@@ -288,6 +316,27 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
         }
       }
     }
+  } else if (cmd == Defs::kStateSet || cmd == Defs::kStateOr) {
+    uint8_t x = Defs::GetX(ev);
+    uint8_t y = Defs::GetY(ev);
+    if (x != engine.GetX() || y != engine.GetY()) {
+      return;
+    }
+    auto arg = Defs::GetArg(ev);
+    for (unsigned r = 0; r < 4; ++r) {
+      unsigned bit = Defs::kRowSegments[r].bit_num;
+      unsigned stride = Defs::kRowSegments[r].bit_stride;
+      for (unsigned c = 0; c < 4; ++c, bit += stride) {
+        bool value = (arg & (1u << bit)) != 0;
+        if (value) {
+          state[r+1][c+1] = true;
+          leds[r*4+c] = true;
+        } else if (cmd == Defs::kStateSet) {
+          state[r+1][c+1] = false;
+          leds[r*4+c] = false;
+        }
+      }
+    }
   }
 }
 
@@ -304,8 +353,8 @@ void ReportButton() {
   unsigned num_c = ((last_button_press >> 4) & 1) + ((last_button_press >> 5) & 1) + ((last_button_press >> 6) & 1) + ((last_button_press >> 7) & 1);
   int r = __builtin_ctz(last_button_press | 0x100);
   int c = __builtin_ctz((last_button_press >> 4) | 0x100);
-  if (num_r == 1 && num_c == 1 &&  r < 4 && c < 4) {
-    int btn = r * 4 + c; // 0..15
+  if (num_r == 1 && num_c == 1 && r < 4 && c < 4) {
+    int btn = r * 4 + c;  // 0..15
     SendEvent(Defs::CreateEvent(Defs::kButtonPressed, engine.GetX(), engine.GetY(), btn));
   } else if (last_button_press == 0b0101) {
     // Menu button is row 0 and row 2 together.

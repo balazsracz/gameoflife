@@ -153,7 +153,7 @@ void GlobalBusSetup() {
   CAN->FMR &= ~CAN_FMR_FINIT;
 }
 
-bool can_tx_busy() {
+bool lowlevel_can_tx_busy() {
   static constexpr uint32_t kMailboxes = (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2);
   return (CAN->TSR & kMailboxes) != kMailboxes;
 }
@@ -170,7 +170,7 @@ void check_for_bus_off() {
   auto m = millis();
   // If any of the warning/error-passive/bus-off conditions is true, the last transmission resulted in an error and we have
   // pending TX messages.
-  if ((CAN->ESR & (CAN_ESR_EPVF | CAN_ESR_BOFF | CAN_ESR_EWGF)) && ((CAN->ESR & CAN_ESR_LEC_Msk) != 0) && can_tx_busy()) {
+  if ((CAN->ESR & (CAN_ESR_EPVF | CAN_ESR_BOFF | CAN_ESR_EWGF)) && ((CAN->ESR & CAN_ESR_LEC_Msk) != 0) && lowlevel_can_tx_busy()) {
     // After 1 msec we drop the packets to the floor.
     if (last_bus_off_millis < m) {
       GlobalBusCancelPendingTx();
@@ -1605,8 +1605,12 @@ public:
     }
   }
 
+  bool empty() {
+    return send_queue_.empty();
+  }
+
   void Loop() {
-    if (can_tx_busy()) return;
+    if (lowlevel_can_tx_busy()) return;
     if (send_queue_.empty()) return;
     if (pending_) {
       // Perform local loopback.
@@ -1633,6 +1637,11 @@ private:
   bool pending_{ false };
 } event_queue;
 
+bool can_tx_busy() {
+  if (lowlevel_can_tx_busy()) return true;
+  if (!event_queue.empty()) return true;
+  return false;
+}
 
 bool SendEvent(uint64_t ev) {
   event_queue.SendEvent(ev);
