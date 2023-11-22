@@ -192,9 +192,23 @@ void MenuBlink(int ctr) {
   }
 }
 
+void SendStateReport() {
+  using Defs = ::ProtocolDefs;
+
+  uint16_t report = 0;
+  for (int r = 1; r <= 4; ++r) {
+    for (int c = 1; c <= 4; ++c) {
+      if (state[r][c]) {
+        report |= 1u << ((r - 1) * 4 + (c - 1));
+      }
+    }
+  }
+  SendEvent(Defs::CreateEvent(Defs::kStateReport, engine.GetX(), engine.GetY(), report));
+}
+
 void OnGlobalEvent(uint64_t ev, uint16_t src) {
   using Defs = ::ProtocolDefs;
-  SerialUSB.printf("event arrived: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
+  //SerialUSB.printf("event arrived: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
   engine.OnGlobalEvent(ev, src);
   if (!Defs::IsProtocolEvent(ev)) return;
   auto cmd = Defs::GetCommand(ev);
@@ -204,7 +218,6 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
       case Defs::kEvolveAndReport:
         {
           memset(next_state, 0, sizeof(next_state));
-          uint16_t report = 0;
           for (int r = 1; r <= 4; ++r) {
             for (int c = 1; c <= 4; ++c) {
               unsigned count = 0;
@@ -213,14 +226,11 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
               }
               next_state[r][c] = (count == 3 || (count == 2 && state[r][c]));
               leds[(r - 1) * 4 + (c - 1)] = next_state[r][c];
-              if (next_state[r][c]) {
-                report |= 1u << ((r - 1) * 4 + (c - 1));
-              }
             }
           }
           static_assert(sizeof(state) == 36, " error size ");
           memcpy(state, next_state, sizeof(state));
-          SendEvent(Defs::CreateEvent(Defs::kStateReport, engine.GetX(), engine.GetY(), report));
+          SendStateReport();
           break;
         }
       case Defs::kSetStateRandom:
@@ -329,14 +339,16 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
       for (unsigned c = 0; c < 4; ++c, bit += stride) {
         bool value = (arg & (1u << bit)) != 0;
         if (value) {
-          state[r+1][c+1] = true;
-          leds[r*4+c] = true;
+          state[r + 1][c + 1] = true;
+          leds[r * 4 + c] = true;
         } else if (cmd == Defs::kStateSet) {
-          state[r+1][c+1] = false;
-          leds[r*4+c] = false;
+          state[r + 1][c + 1] = false;
+          leds[r * 4 + c] = false;
         }
       }
     }
+    SendStateReport();
+    return;
   }
 }
 
