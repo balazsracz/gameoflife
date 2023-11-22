@@ -1,5 +1,7 @@
 #include "protocol-defs.h"
+#include <AUnitVerbose.h>
 
+//#define RUN_TESTS
 
 // ================= API for touch sensor (input buttons) ===================
 
@@ -409,9 +411,55 @@ void setup() {
   pinMode(kLed13Pin, OUTPUT);
   pinMode(kLed14Pin, OUTPUT);
   memset(state, 0, sizeof(state));
+
+#ifdef RUN_TESTS
+  while (!Serial)
+    ;
+  //delay(2000);
+  Serial.println("Hello!");
+#endif
+}
+
+class StateBitTest : public aunit::TestOnce {
+protected:
+  // Picks state [r][c], asserts that it is true and clears it.
+  void AssertAndClearState(int r, int c) {
+    assertTrue(state[r][c]);
+    state[r][c] = false;
+  }
+  // Asserts that all of the sstate is empty.
+  void AssertEmptyState() {
+    for (int r = 0; r < 6; ++r) {
+      for (int c = 0; c < 6; ++c) {
+        if (state[r][c]) {
+          Serial.printf("state[%d][%d] is not empty\n", r, c);
+          assertFalse(state[r][c]);
+        }
+      }
+    }
+  }
+};
+
+testF(StateBitTest, NeighborReportTest) {
+  using Defs = ::ProtocolDefs;
+  memset(state, 0, sizeof(state));
+  engine.SetupTest();
+  OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, 0x85, 0x80, 1u << 12), 0);
+  AssertAndClearState(0, 1);
+  AssertEmptyState();
+  OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, 0x85, 0x80, 1u << 14), 0);
+  AssertAndClearState(0, 3);
+  AssertEmptyState();
+  OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, 0x85, 0x82, 1 | 4), 0);
+  AssertAndClearState(5, 1);
+  AssertAndClearState(5, 3);
+  AssertEmptyState();
 }
 
 void loop() {
+#ifdef RUN_TESTS
+  aunit::TestRunner::run();
+#endif
   // put your main code here, to run repeatedly:
   TouchLoop();
   TimerLoop();

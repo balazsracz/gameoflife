@@ -57,6 +57,23 @@ public:
     InitState();
   }
 
+  // Initializes the internal data structures with the following data:
+  // X=85, Y=80
+  // neighbors with +- 1.
+  void SetupTest() {
+    InitState();
+    my_x_ = 0x85;
+    my_y_ = 0x81;
+    neighbors_[kNorth] = {.neigh_x = 0x85, .neigh_y = 0x80, .neigh_dir = kSouth};
+    neighbors_[kSouth] = {.neigh_x = 0x85, .neigh_y = 0x82, .neigh_dir = kNorth};
+    neighbors_[kEast] = {.neigh_x = 0x86, .neigh_y = 0x81, .neigh_dir = kWest};
+    neighbors_[kWest] = {.neigh_x = 0x84, .neigh_y = 0x81, .neigh_dir = kEast};
+    neighbors_[kNorthEast] = {.neigh_x = 0x86, .neigh_y = 0x80, .neigh_dir = kSouthWest, .pixel_offset = 12};
+    neighbors_[kNorthWest] = {.neigh_x = 0x84, .neigh_y = 0x80, .neigh_dir = kSouthEast, .pixel_offset = 15};
+    neighbors_[kSouthEast] = {.neigh_x = 0x86, .neigh_y = 0x82, .neigh_dir = kSouthWest, .pixel_offset = 0};
+    neighbors_[kSouthWest] = {.neigh_x = 0x84, .neigh_y = 0x82, .neigh_dir = kSouthEast, .pixel_offset = 3};
+  }
+  
   // Call this function from the loop() handler.
   void Loop() {
     auto millis = iface_->millis();

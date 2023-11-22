@@ -13,6 +13,9 @@ extern void OnGlobalEvent(uint64_t event, uint16_t src);
 // Call this function to send a broadcast event to the global bus. @return true on success, false when the frame was dropped.
 extern bool SendEvent(uint64_t event_id);
 
+// Useful for unit testing.
+extern uint64_t LastSentEvent();
+
 // Call this function once from setup().
 extern void GlobalBusSetup();
 
@@ -1600,6 +1603,7 @@ class EventQueue {
 public:
   void SendEvent(uint64_t ev) {
     send_queue_.push(ev);
+    last_event_ = ev;
     if (!pending_) {
       Loop();
     }
@@ -1632,9 +1636,14 @@ public:
     pending_ = true;
   }
 
+  uint64_t GetLast() {
+    return last_event_;
+  }
+
 private:
   std::queue<uint64_t> send_queue_;
   bool pending_{ false };
+  uint64_t last_event_{0};
 } event_queue;
 
 bool can_tx_busy() {
@@ -1646,6 +1655,10 @@ bool can_tx_busy() {
 bool SendEvent(uint64_t ev) {
   event_queue.SendEvent(ev);
   return true;
+}
+
+uint64_t LastSentEvent() {
+  return event_queue.GetLast();
 }
 
 void EnterBootloader() {
