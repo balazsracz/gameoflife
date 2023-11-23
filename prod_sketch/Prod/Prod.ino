@@ -403,26 +403,7 @@ void ProcessButtons() {
   }
 }
 
-void setup() {
-  srand(nmranet_nodeid());
-  // put your setup code here, to run once:
-  TimerSetup();
-  TouchSetup();
-  LocalBusSetup();
-  GlobalBusSetup();
-  engine.Setup(&global_impl);
 
-  pinMode(kLed13Pin, OUTPUT);
-  pinMode(kLed14Pin, OUTPUT);
-  memset(state, 0, sizeof(state));
-
-#ifdef RUN_TESTS
-  while (!Serial)
-    ;
-  //delay(2000);
-  Serial.println("Hello!");
-#endif
-}
 
 class StateBitTest : public aunit::TestOnce {
 protected:
@@ -486,6 +467,28 @@ test(SetReportClearState) {
   assertEqual(Defs::CreateEvent(Defs::kStateReport, engine.kTestX, engine.kTestY, 0), LastSentEvent());
 }
 
+test(SetRandomState) {
+  using Defs = ::ProtocolDefs;
+  engine.SetupTest();
+  // Clear state test.
+  OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kClearState), 0);
+  OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom), 0);
+  OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kReportState), 0);
+  uint16_t st1 = LastSentEvent() & 0xffffu;
+  OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom), 0);
+  OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kReportState), 0);
+  uint16_t st2 = LastSentEvent() & 0xffffu;
+  OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom), 0);
+  OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kReportState), 0);
+  uint16_t st3 = LastSentEvent() & 0xffffu;
+
+  assertNotEqual(0u, (unsigned)st1);
+  assertNotEqual(0u, (unsigned)st2);
+  assertNotEqual(0u, (unsigned)st3);
+  assertNotEqual(st1, st2);
+  assertNotEqual(st2, st3);
+}
+
 String EventToString(uint64_t ev) {
   static const char kHexDigits[] = "0123456789ABCDEF";
   String ret("0123456789012345");
@@ -520,6 +523,8 @@ protected:
   // written as a person.
   void TestXEvolution(uint8_t r0, uint8_t r1, uint8_t r2, uint8_t r3, uint8_t r4, uint8_t r5, uint16_t exp) {
     using Defs = ::ProtocolDefs;
+    engine.SetupTest();
+
     // top right
     OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, engine.kTestX + 1, engine.kTestY - 1, r0 & 0x20 ? 1u << 12 : 0), 0);
     // top left
@@ -533,15 +538,16 @@ protected:
     uint16_t rstate = ((r1 & 0x20) >> 5) | ((r2 & 0x20) >> 1) | ((r3 & 0x20) << 3) | ((r4 & 0x20) << 7);
     OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, engine.kTestX + 1, engine.kTestY, rstate), 0);
     // bottom left
-    OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, engine.kTestX - 1, engine.kTestY + 1, r5 & 0x01 ? 1u << 15 : 0), 0);
+    OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, engine.kTestX - 1, engine.kTestY + 1, r5 & 0x01 ? 1u << 3 : 0), 0);
     // bottom right
-    OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, engine.kTestX + 1, engine.kTestY + 1, r5 & 0x20 ? 1u << 12 : 0), 0);
+    OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, engine.kTestX + 1, engine.kTestY + 1, r5 & 0x20 ? 1u << 0 : 0), 0);
     // bottom
-    OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, engine.kTestX, engine.kTestY + 1, ((r5 >> 1) & 0xF) << 12), 0);
+    OnGlobalEvent(Defs::CreateEvent(Defs::kStateReport, engine.kTestX, engine.kTestY + 1, ((r5 >> 1) & 0xF) << 0), 0);
     // state
     uint16_t st = ((r1 >> 1) & 0xf) | (((r2 >> 1) & 0xf) << 4) | (((r3 >> 1) & 0xf) << 8) | (((r4 >> 1) & 0xf) << 12);
     OnGlobalEvent(Defs::CreateEvent(Defs::kStateSet, engine.kTestX, engine.kTestY, st), 0);
 
+/*
     SerialUSB.printf("\nbefore:\n");
     for (unsigned r = 0; r < 6; ++r) {
       for (unsigned c = 0; c < 6; ++c) {
@@ -549,6 +555,7 @@ protected:
       }
       SerialUSB.printf("\n");
     }
+    */
 
     OnGlobalEvent(Defs::CreateGlobalCmd(Defs::kEvolveAndReport), 0);
     uint64_t last = LastSentEvent();
@@ -579,26 +586,46 @@ testF(EvolutionTest, TopNeighbor) {
 }
 
 testF(EvolutionTest, BottomNeighbor) {
-  TestXEvolution(0, 0, 0, 0, 0b000111, 0, 0x1000);
-  TestXEvolution(0, 0, 0, 0, 0b001110, 0, 0x2000);
-  TestXEvolution(0, 0, 0, 0, 0b011100, 0, 0x4000);
-  TestXEvolution(0, 0, 0, 0, 0b111000, 0, 0x8000);
+  TestXEvolution(0, 0, 0, 0, 0, 0b000111, 0x1000);
+  TestXEvolution(0, 0, 0, 0, 0, 0b001110, 0x2000);
+  TestXEvolution(0, 0, 0, 0, 0, 0b011100, 0x4000);
+  TestXEvolution(0, 0, 0, 0, 0, 0b111000, 0x8000);
 }
 
 testF(EvolutionTest, LeftNeighbor) {
-  TestXEvolution(0b100000, 0b100000, 0b100000, 0, 0, 0, 0, 0x0001);
-  TestXEvolution(0, 0b100000, 0b100000, 0b100000, 0, 0, 0, 0x0010);
-  TestXEvolution(0, 0, 0b100000, 0b100000, 0b100000, 0, 0, 0x0100);
-  TestXEvolution(0, 0, 0, 0b100000, 0b100000, 0b100000, 0, 0x1000);
+  TestXEvolution(0b100000, 0b100000, 0b100000, 0, 0, 0, 0x0008);
+  TestXEvolution(0, 0b100000, 0b100000, 0b100000, 0, 0, 0x0080);
+  TestXEvolution(0, 0, 0b100000, 0b100000, 0b100000, 0, 0x0800);
+  TestXEvolution(0, 0, 0, 0b100000, 0b100000, 0b100000, 0x8000);
 }
 
 testF(EvolutionTest, RightNeighbor) {
-  TestXEvolution(1, 1, 1, 0, 0, 0, 0, 0x0008);
-  TestXEvolution(0, 1, 1, 1, 0, 0, 0, 0x0080);
-  TestXEvolution(0, 0, 1, 1, 1, 0, 0, 0x0800);
-  TestXEvolution(0, 0, 0, 1, 1, 1, 0, 0x8000);
+  TestXEvolution(1, 1, 1, 0, 0, 0, 0x0001);
+  TestXEvolution(0, 1, 1, 1, 0, 0, 0x0010);
+  TestXEvolution(0, 0, 1, 1, 1, 0, 0x0100);
+  TestXEvolution(0, 0, 0, 1, 1, 1, 0x1000);
 }
 
+void setup() {
+  srand(nmranet_nodeid());
+  // put your setup code here, to run once:
+  TimerSetup();
+  TouchSetup();
+  LocalBusSetup();
+  GlobalBusSetup();
+  engine.Setup(&global_impl);
+
+  pinMode(kLed13Pin, OUTPUT);
+  pinMode(kLed14Pin, OUTPUT);
+  memset(state, 0, sizeof(state));
+
+#ifdef RUN_TESTS
+  while (!Serial)
+    ;
+  //delay(2000);
+  Serial.printf("Hello! %d\n", 42);
+#endif
+}
 
 void loop() {
 #ifdef RUN_TESTS
