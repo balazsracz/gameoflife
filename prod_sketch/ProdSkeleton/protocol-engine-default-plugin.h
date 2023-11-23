@@ -18,6 +18,10 @@ class ProtocolEngineIfImpl : public ProtocolEngineInterface {
     return openlcb::state_.alias;
   }
 
+  uint64_t GetGlobalAddress() override {
+    return nmranet_nodeid();
+  }
+  
   void LocalBusSignal(Direction dir, bool active) {
     ::LocalBusSignal(dir, active);
   }
@@ -37,6 +41,6 @@ class ProtocolEngineIfImpl : public ProtocolEngineInterface {
     HAL_NVIC_SystemReset();
   }
 
-};
+} global_impl;
 
 #endif // _PROTOCOL_ENGINE_DEFAULT_PLUGIN_H_

@@ -16,6 +16,9 @@ public:
   // @return the currently used alias of the local node,  or 0 if the node is not initialized yet.
   virtual uint16_t GetAlias() = 0;
 
+  // @return the hardware's global address
+  virtual uint64_t GetGlobalAddress() = 0;
+  
   virtual void LocalBusSignal(Direction dir, bool active) = 0;
   virtual bool LocalBusIsActive(Direction dir) = 0;
 
@@ -43,6 +46,10 @@ public:
     return my_y_;
   }
 
+  bool ShouldBlinkMenu() {
+    return is_leader_ && menu_active_;
+  }
+
   // Call this function once from setup().
   // @param iface implementation object proxying a variety of functions to the global state machines. Ownership is NOT transferred.
   void Setup(ProtocolEngineInterface* iface) {
@@ -50,6 +57,26 @@ public:
     InitState();
   }
 
+  static constexpr unsigned kTestX = 0x85;
+  static constexpr unsigned kTestY = 0x81;
+
+  // Initializes the internal data structures with the following data:
+  // X=85, Y=80
+  // neighbors with +- 1.
+  void SetupTest() {
+    InitState();
+    my_x_ = kTestX;
+    my_y_ = kTestY;
+    neighbors_[kNorth] = {.neigh_x = 0x85, .neigh_y = 0x80, .neigh_dir = kSouth};
+    neighbors_[kSouth] = {.neigh_x = 0x85, .neigh_y = 0x82, .neigh_dir = kNorth};
+    neighbors_[kEast] = {.neigh_x = 0x86, .neigh_y = 0x81, .neigh_dir = kWest};
+    neighbors_[kWest] = {.neigh_x = 0x84, .neigh_y = 0x81, .neigh_dir = kEast};
+    neighbors_[kNorthEast] = {.neigh_x = 0x86, .neigh_y = 0x80, .neigh_dir = kSouthWest, .pixel_offset = 12};
+    neighbors_[kNorthWest] = {.neigh_x = 0x84, .neigh_y = 0x80, .neigh_dir = kSouthEast, .pixel_offset = 15};
+    neighbors_[kSouthEast] = {.neigh_x = 0x86, .neigh_y = 0x82, .neigh_dir = kNorthWest, .pixel_offset = 0};
+    neighbors_[kSouthWest] = {.neigh_x = 0x84, .neigh_y = 0x82, .neigh_dir = kNorthEast, .pixel_offset = 3};
+  }
+  
   // Call this function from the loop() handler.
   void Loop() {
     auto millis = iface_->millis();
@@ -82,6 +109,9 @@ public:
       // Let's trigger a leader election.
       ParticipateLeaderElection();
     }
+    if (to_leader_election_ && millis >= idle_timeout_) {
+      TimeoutLeaderElection();
+    }
     if (need_full_discovery_ && disc_state_ == kNotRunning) {
       disc_state_ = kStartFullDiscovery;
       need_full_discovery_ = false;
@@ -104,6 +134,9 @@ public:
   void OnGlobalEvent(int64_t ev, uint16_t src) {
     if (!Defs::IsProtocolEvent(ev)) return;
     idle_timeout_ = iface_->millis() + 10;
+    if (to_leader_election_) {
+      SetElectionTimeout();
+    }
     Defs::Command cmd = Defs::GetCommand(ev);
     switch (cmd) {
       case Defs::kGlobalCmd:
@@ -173,9 +206,21 @@ public:
           uint64_t h = Murmur3(report, 0xa81f4f4c);
           h <<= 32;
           h |= Murmur3(report, 0x7d55d81a);
-          curr_hash_ |= h;
+          curr_hash_ ^= h;
           return;
         }
+      case Defs::kButtonPressed:
+        if (!is_leader_) {
+          return;
+        }
+        if (Defs::GetArg(ev) == 16) {
+          // menu button
+          menu_active_ = !menu_active_;
+          menu_selected_ = kMenuNone;
+        } else {
+          ExecuteButton(Defs::GetX(ev), Defs::GetY(ev), Defs::GetArg(ev));
+        }
+        return;
     }
   }
 
@@ -194,12 +239,15 @@ private:
           InitState();
         }
         return;
+      case Defs::kEnterFirmware:
+        EnterBootloader();
+        return;
       case Defs::kInitDone:
         if (src == iface_->GetAlias()) return;
         if (src == leader_alias_) {
           // Lost the leader.
           seen_leader_ = false;
-          leader_alias_ = 0xF000;
+          leader_alias_ |= 0xF000;
         } else if (is_leader_) {
           // Tell the new node that we are the leader.
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
@@ -221,6 +269,7 @@ private:
         if (is_leader_) {
           SerialUSB.printf("Seen conflicting leader me=%03x known=%03x other=%03x", iface_->GetAlias(), leader_alias_, src);
           is_leader_ = false;
+          GlobalBusCancelPendingTx();
         }
         seen_leader_ = true;
         to_leader_election_ = false;
@@ -261,20 +310,34 @@ private:
         run_tick_ = false;
         return;
       case Defs::kEvolveAndReport:
-        if (curr_hash_ == last_hash_[0] || curr_hash_ == last_hash_[1] || !seen_non_zero_) {
-          // uninteresting state
-          ++num_bad_states_;
-          if (num_bad_states_ > kDeadBoardIterationThreshold && detect_steady_state_) {
-            iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom));
+        if (is_leader_) {
+          if (curr_hash_ == last_hash_[0] || curr_hash_ == last_hash_[1] || !seen_non_zero_) {
+            // uninteresting state
+            ++num_bad_states_;
+            if (num_bad_states_ > kDeadBoardIterationThreshold && detect_steady_state_) {
+              iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom));
+            }
+          } else {
+            num_bad_states_ = 0;
           }
-        } else {
-          num_bad_states_ = 0;
         }
         last_hash_[1] = last_hash_[0];
         last_hash_[0] = curr_hash_;
         curr_hash_ = 0;
         seen_non_zero_ = false;
         return;
+      case Defs::kReportCalibration: {
+        extern uint64_t channel_sum[2][4];
+        extern unsigned channel_count[2][4];
+        uint8_t x = (channel_sum[0][0] / channel_count[0][0]) >> 4;
+        uint8_t y = (channel_sum[0][2] / channel_count[0][2]) >> 4;
+        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, x, y, Defs::kCalibrationData));
+        return;
+      }
+      case Defs::kReportAddress: {
+        iface_->SendEvent(Defs::CreateEvent(Defs::kCurrentAddressReport, GetX(), GetY(), iface_->GetGlobalAddress() & 0xffffu));
+        return;
+      }
     }
   }
 
@@ -285,20 +348,21 @@ private:
       CancelLocalSignal();
       to_cancel_local_signal_ = false;
     }
-    if (to_leader_election_) {
-      // Leader election complete.
-      to_leader_election_ = false;
-      idle_timeout_ = iface_->millis() + 10;
-      iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
-      if (leader_alias_ == iface_->GetAlias()) {
-        is_leader_ = true;
-        need_full_discovery_ = true;
-        seen_leader_ = true;
-        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
-        SerialUSB.printf("I am leader %03x\n", leader_alias_);
-      } else {
-        SerialUSB.printf("Leader is %03x\n", leader_alias_);
-      }
+  }
+
+  void TimeoutLeaderElection() {
+    // Leader election complete.
+    to_leader_election_ = false;
+    idle_timeout_ = iface_->millis() + 10;
+    iface_->SendEvent(Defs::CreateEvent(Defs::kDeclareLeader, 0, 0, leader_alias_));
+    if (leader_alias_ == iface_->GetAlias()) {
+      is_leader_ = true;
+      need_full_discovery_ = true;
+      seen_leader_ = true;
+      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kIAmLeader));
+      SerialUSB.printf("I am leader %03x\n", leader_alias_);
+    } else {
+      SerialUSB.printf("Leader is %03x\n", leader_alias_);
     }
   }
 
@@ -314,6 +378,7 @@ private:
 
   // Restores the internal state to a fresh boot.
   void InitState() {
+    GlobalBusCancelPendingTx();
     to_cancel_local_signal_ = false;
     to_leader_election_ = false;
     to_disc_neighbor_lookup_ = false;
@@ -337,6 +402,8 @@ private:
     run_tick_ = false;
     num_bad_states_ = kDeadBoardIterationThreshold - 2;
     detect_steady_state_ = true;
+    menu_active_ = false;
+    menu_selected_ = kMenuNone;
   }
 
   // @return true if this event is targeting me in the x/y parameters.
@@ -361,7 +428,7 @@ private:
   // Sets the timeout to the idle delay from this leader election message.
   void SetElectionTimeout() {
     to_leader_election_ = true;
-    timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
+    idle_timeout_ = iface_->millis() + (leader_alias_ == iface_->GetAlias() ? 10 : 14);
   }
 
   // Checks if a node is known or not. If not known, adds the node to known and enqueues it for neighbor discovery.
@@ -607,6 +674,99 @@ private:
     return (Direction)((((int)dir) - 1) % 4);
   }
 
+  // No menu entry selected.
+  static constexpr unsigned kMenuNone = 16;
+  // These buttons set the table's speed.
+  static constexpr unsigned kMenuSpeed025 = 4;
+  static constexpr unsigned kMenuSpeed05 = 5;
+  static constexpr unsigned kMenuSpeed1 = 6;
+  static constexpr unsigned kMenuSpeed10 = 7;
+
+  // Turns off iteration.
+  static constexpr unsigned kMenuStop = 0;
+  // Turns on iteration.
+  static constexpr unsigned kMenuStart = 1;
+  // One iteration step.
+  static constexpr unsigned kMenuStep = 2;
+  // Random board
+  static constexpr unsigned kMenuRandom = 3;
+
+  // After this: every button pressed will add that bit to the pattern.
+  static constexpr unsigned kSetBit = 8;
+
+  // Pressing a button will add three horizontal bits from the given place.
+  static constexpr unsigned kAddTrio = 9;
+
+  // Clear the entire board.
+  static constexpr unsigned kMenuEmpty = 11;
+  
+  
+  void ExitMenu() {
+    menu_active_ = 0;
+    menu_selected_ = kMenuNone;
+  }
+  
+  void ExecuteButton(int x, int y, unsigned btn) {
+    if (menu_selected_ == kMenuNone) {
+      menu_selected_ = btn;
+      switch(menu_selected_) {
+        case kMenuStop:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStopIteration));
+          return ExitMenu();
+        case kMenuStart:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStartIteration));
+          return ExitMenu();
+        case kMenuStep:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kEvolveAndReport));
+          return ExitMenu();
+        case kMenuRandom:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kSetStateRandom));
+          return ExitMenu();
+      }
+    } else {
+      switch(menu_selected_) {
+        case kSetBit:
+          AddBit(x, y, 0, 0, btn);
+          return;
+        case kAddTrio:
+          AddBit(x, y, 0, 0, btn);
+          AddBit(x, y, 1, 0, btn);
+          AddBit(x, y, 2, 0, btn);
+          return;
+        default:
+          return ExitMenu();
+      }
+    }
+  }
+
+  /// Sends out a message to add one bit to the board.
+  /// @param x board address x
+  /// @param y board address y
+  /// @param btn what is the origin (0..15, row/col)
+  /// @param dx where compared to the origin (plus: east)
+  /// @param dy where compared to the origin (plus:south)
+  void AddBit(uint8_t x, uint8_t y, int dx, int dy, unsigned btn) {
+    int r = (btn / 4) + dy;
+    int c = (btn % 4) + dx;
+    while (r >= 4) {
+      y++;
+      r -= 4;
+    }
+    while (r < 0) {
+      y--;
+      r += 4;
+    }
+    while (c >= 4) {
+      x++;
+      c -= 4;
+    }
+    while (c < 0) {
+      x--;
+      c += 4;
+    }
+    iface_->SendEvent(Defs::CreateEvent(Defs::kStateOr, x, y, 1u<<((r*4)+c)));
+  }  
+  
   static constexpr inline uint32_t rotl32(uint32_t x, uint32_t n) {
     return (x << n) | (x >> (32 - n));
   }
@@ -732,6 +892,11 @@ private:
   // how many consecutive states we've seen that seems uninteresting.
   unsigned num_bad_states_ : 4;
 
+  // menu is active
+  bool menu_active_ : 1;
+  // What menu item is selected right now.
+  uint8_t menu_selected_ : 5;
+
   // Last direction we queried for the node in the head of the queue. -1 .. 3.
   int disc_neighbor_dir_ : 4;
   // When should we emit the next evolution tick.
@@ -754,4 +919,4 @@ private:
   uint64_t last_hash_[3];
 };  // class ProtocolEngine
 
-#endif // _PROTOCOL_ENGINE_H_
+#endif  // _PROTOCOL_ENGINE_H_

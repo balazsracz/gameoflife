@@ -1,3 +1,4 @@
+#include "stm32f072xb.h"
 #ifndef _GLOBAL_BUS_H_
 #define _GLOBAL_BUS_H_
 
@@ -12,11 +13,20 @@ extern void OnGlobalEvent(uint64_t event, uint16_t src);
 // Call this function to send a broadcast event to the global bus. @return true on success, false when the frame was dropped.
 extern bool SendEvent(uint64_t event_id);
 
+// Useful for unit testing.
+extern uint64_t LastSentEvent();
+
 // Call this function once from setup().
 extern void GlobalBusSetup();
 
 // Call this function from the loop() handler.
 extern void GlobalBusLoop();
+
+// Restarts the board in bootloader mode.
+extern void EnterBootloader();
+
+// Cancels sending any messages that might be enqueued.
+extern void GlobalBusCancelPendingTx();
 
 
 // ============================ IMPLEMENTATION =========================
@@ -146,9 +156,33 @@ void GlobalBusSetup() {
   CAN->FMR &= ~CAN_FMR_FINIT;
 }
 
-bool can_tx_busy() {
+bool lowlevel_can_tx_busy() {
   static constexpr uint32_t kMailboxes = (CAN_TSR_TME0 | CAN_TSR_TME1 | CAN_TSR_TME2);
   return (CAN->TSR & kMailboxes) != kMailboxes;
+}
+
+void GlobalBusCancelPendingTx() {
+  CAN->TSR |= CAN_TSR_ABRQ0 | CAN_TSR_ABRQ1 | CAN_TSR_ABRQ2;
+}
+
+uint32_t last_bus_off_millis = -1;
+
+/// Checks if we are in bus off state, i.e. when there is noone to receive the packets
+/// we are sending. Cancels pending sends after 1 msec.
+void check_for_bus_off() {
+  auto m = millis();
+  // If any of the warning/error-passive/bus-off conditions is true, the last transmission resulted in an error and we have
+  // pending TX messages.
+  if ((CAN->ESR & (CAN_ESR_EPVF | CAN_ESR_BOFF | CAN_ESR_EWGF)) && ((CAN->ESR & CAN_ESR_LEC_Msk) != 0) && lowlevel_can_tx_busy()) {
+    // After 1 msec we drop the packets to the floor.
+    if (last_bus_off_millis < m) {
+      GlobalBusCancelPendingTx();
+    }
+    last_bus_off_millis = m;
+  } else {
+    // Set to guard value.
+    last_bus_off_millis = -1;
+  }
 }
 
 bool try_send_can_frame(const struct can_frame &can_frame) {
@@ -1351,8 +1385,8 @@ void handle_input_frame() {
     if (state_.output_frame_full) {
       return;  // re-try.
     }
-    if (dlc > 1 && state_.input_frame.data[0] == DatagramDefs::CONFIGURATION) {
-      return reject_datagram();
+    if (dlc > 2 && state_.input_frame.data[0] == DatagramDefs::CONFIGURATION && state_.input_frame.data[1] == 0xA1) {
+      EnterBootloader();
     } else {
       return reject_datagram();
     }
@@ -1569,13 +1603,18 @@ class EventQueue {
 public:
   void SendEvent(uint64_t ev) {
     send_queue_.push(ev);
+    last_event_ = ev;
     if (!pending_) {
       Loop();
     }
   }
 
+  bool empty() {
+    return send_queue_.empty();
+  }
+
   void Loop() {
-    if (can_tx_busy()) return;
+    if (lowlevel_can_tx_busy()) return;
     if (send_queue_.empty()) return;
     if (pending_) {
       // Perform local loopback.
@@ -1597,33 +1636,60 @@ public:
     pending_ = true;
   }
 
+  uint64_t GetLast() {
+    return last_event_;
+  }
+
 private:
   std::queue<uint64_t> send_queue_;
   bool pending_{ false };
+  uint64_t last_event_{0};
 } event_queue;
 
+bool can_tx_busy() {
+  if (lowlevel_can_tx_busy()) return true;
+  if (!event_queue.empty()) return true;
+  return false;
+}
 
 bool SendEvent(uint64_t ev) {
   event_queue.SendEvent(ev);
   return true;
 }
 
-void GlobalBusLoop() {
-  event_queue.Loop();
-  openlcb::openlcb_loop();
-#if 0
-  struct can_frame f;
-  if (read_can_frame(&f) && IS_CAN_FRAME_EFF(f) && f.can_dlc == 8) {
-    uint32_t id = GET_CAN_FRAME_ID_EFF(f);
-    if ((id & ~0xFFF) == 0x195b4000) {
-      // Event arrived.
-      uint64_t ev = 0;
-      memcpy(&ev, f.data, 8);
-      ev = __builtin_bswap64(ev);
-      OnGlobalEvent(ev);
-    }
-  }
-#endif
+uint64_t LastSentEvent() {
+  return event_queue.GetLast();
 }
 
-#endif // _GLOBAL_BUS_H_
+void EnterBootloader() {
+  // Start bootloader
+  asm(" cpsid i\n");
+  uint32_t *rqb = (uint32_t *)0x20000000;
+  *rqb = 0x76b89b1eU;
+  // clear all interrupt enable bits.
+  NVIC->ICER[0] = 0xffffffffu;
+  asm volatile(" mov   r3, %[flash_addr] \n"
+               :
+               : [flash_addr] "r"(0x0801e000));
+  asm volatile(" ldr r0, [r3]\n"
+               " mov sp, r0\n"
+               " ldr r0, [r3, #4]\n"
+               " bx  r0\n");
+}
+
+extern bool btn_row_active[4];
+// These variables are set to true when a given column in the key matrix is active (has a finger somewhere).
+extern bool btn_col_active[4];
+
+void GlobalBusLoop() {
+  check_for_bus_off();
+  event_queue.Loop();
+  openlcb::openlcb_loop();
+  // menu + 15 enters the bootloader.
+  if (btn_row_active[0] && !btn_row_active[1] && btn_row_active[2] && btn_row_active[3] &&
+    !btn_col_active[0] && !btn_col_active[1] && !btn_col_active[2] && btn_col_active[3]) {
+    EnterBootloader();
+  }
+}
+
+#endif  // _GLOBAL_BUS_H_
