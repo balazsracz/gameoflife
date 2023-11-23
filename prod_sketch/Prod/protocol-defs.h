@@ -120,7 +120,7 @@ public:
     kLocalToggleUnassigned = 8,
     // When this command comes, each node should evolve the current state and report the state.
     kEvolveAndReport = 9,
-    // Report the current state.
+    // Requests all devices to report the current state.
     kReportState = 10,
     // Stop iteration (acted upon by the leader only)
     kStopIteration = 11,
