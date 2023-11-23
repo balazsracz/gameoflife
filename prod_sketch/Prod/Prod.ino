@@ -578,6 +578,27 @@ testF(EvolutionTest, TopNeighbor) {
   TestXEvolution(0b111000, 0, 0, 0, 0, 0, 0x0008);
 }
 
+testF(EvolutionTest, BottomNeighbor) {
+  TestXEvolution(0, 0, 0, 0, 0b000111, 0, 0x1000);
+  TestXEvolution(0, 0, 0, 0, 0b001110, 0, 0x2000);
+  TestXEvolution(0, 0, 0, 0, 0b011100, 0, 0x4000);
+  TestXEvolution(0, 0, 0, 0, 0b111000, 0, 0x8000);
+}
+
+testF(EvolutionTest, LeftNeighbor) {
+  TestXEvolution(0b100000, 0b100000, 0b100000, 0, 0, 0, 0, 0x0001);
+  TestXEvolution(0, 0b100000, 0b100000, 0b100000, 0, 0, 0, 0x0010);
+  TestXEvolution(0, 0, 0b100000, 0b100000, 0b100000, 0, 0, 0x0100);
+  TestXEvolution(0, 0, 0, 0b100000, 0b100000, 0b100000, 0, 0x1000);
+}
+
+testF(EvolutionTest, RightNeighbor) {
+  TestXEvolution(1, 1, 1, 0, 0, 0, 0, 0x0008);
+  TestXEvolution(0, 1, 1, 1, 0, 0, 0, 0x0080);
+  TestXEvolution(0, 0, 1, 1, 1, 0, 0, 0x0800);
+  TestXEvolution(0, 0, 0, 1, 1, 1, 0, 0x8000);
+}
+
 
 void loop() {
 #ifdef RUN_TESTS
