@@ -304,6 +304,7 @@ private:
       case Defs::kStartIteration:
         if (is_leader_) {
           run_tick_ = true;
+          tick_timeout_ = idle_timeout_;
         }
         return;
       case Defs::kStopIteration:
