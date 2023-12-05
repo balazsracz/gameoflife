@@ -1,7 +1,7 @@
 #include "protocol-defs.h"
 #include <AUnitVerbose.h>
 
-#define RUN_TESTS
+//#define RUN_TESTS
 
 // ================= API for touch sensor (input buttons) ===================
 
