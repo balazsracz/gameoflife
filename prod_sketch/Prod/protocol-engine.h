@@ -692,6 +692,16 @@ private:
   // Random board
   static constexpr unsigned kMenuRandom = 3;
 
+  // Evoution speed = 250 msec
+  static constexpr unsigned kMenuSpeedFast = 4;
+  // Evoution speed = 500 msec
+  static constexpr unsigned kMenuSpeedMid = 5;
+  // Evoution speed = 1000 msec
+  static constexpr unsigned kMenuSpeedSlow = 6;
+  // Evoution speed = 10000 msec
+  static constexpr unsigned kMenuSpeedVerySlow = 7;
+
+  
   // After this: every button pressed will add that bit to the pattern.
   static constexpr unsigned kSetBit = 8;
 
@@ -723,6 +733,18 @@ private:
         case kMenuRandom:
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kSetStateRandom));
           return ExitMenu();
+        case kMenuSpeedFast:
+          evolution_speed_msec_ = 250;
+          return ExitMenu();
+        case kMenuSpeedMid:
+          evolution_speed_msec_ = 500;
+          return ExitMenu();
+        case kMenuSpeedSlow:
+          evolution_speed_msec_ = 1000;
+          return ExitMenu();
+        case kMenuSpeedVerySlow:
+          evolution_speed_msec_ = 10000;
+          return ExitMenu();          
       }
     } else {
       switch(menu_selected_) {
