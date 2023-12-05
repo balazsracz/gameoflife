@@ -18,7 +18,7 @@ public:
 
   // @return the hardware's global address
   virtual uint64_t GetGlobalAddress() = 0;
-  
+
   virtual void LocalBusSignal(Direction dir, bool active) = 0;
   virtual bool LocalBusIsActive(Direction dir) = 0;
 
@@ -67,16 +67,16 @@ public:
     InitState();
     my_x_ = kTestX;
     my_y_ = kTestY;
-    neighbors_[kNorth] = {.neigh_x = 0x85, .neigh_y = 0x80, .neigh_dir = kSouth};
-    neighbors_[kSouth] = {.neigh_x = 0x85, .neigh_y = 0x82, .neigh_dir = kNorth};
-    neighbors_[kEast] = {.neigh_x = 0x86, .neigh_y = 0x81, .neigh_dir = kWest};
-    neighbors_[kWest] = {.neigh_x = 0x84, .neigh_y = 0x81, .neigh_dir = kEast};
-    neighbors_[kNorthEast] = {.neigh_x = 0x86, .neigh_y = 0x80, .neigh_dir = kSouthWest, .pixel_offset = 12};
-    neighbors_[kNorthWest] = {.neigh_x = 0x84, .neigh_y = 0x80, .neigh_dir = kSouthEast, .pixel_offset = 15};
-    neighbors_[kSouthEast] = {.neigh_x = 0x86, .neigh_y = 0x82, .neigh_dir = kNorthWest, .pixel_offset = 0};
-    neighbors_[kSouthWest] = {.neigh_x = 0x84, .neigh_y = 0x82, .neigh_dir = kNorthEast, .pixel_offset = 3};
+    neighbors_[kNorth] = { .neigh_x = 0x85, .neigh_y = 0x80, .neigh_dir = kSouth };
+    neighbors_[kSouth] = { .neigh_x = 0x85, .neigh_y = 0x82, .neigh_dir = kNorth };
+    neighbors_[kEast] = { .neigh_x = 0x86, .neigh_y = 0x81, .neigh_dir = kWest };
+    neighbors_[kWest] = { .neigh_x = 0x84, .neigh_y = 0x81, .neigh_dir = kEast };
+    neighbors_[kNorthEast] = { .neigh_x = 0x86, .neigh_y = 0x80, .neigh_dir = kSouthWest, .pixel_offset = 12 };
+    neighbors_[kNorthWest] = { .neigh_x = 0x84, .neigh_y = 0x80, .neigh_dir = kSouthEast, .pixel_offset = 15 };
+    neighbors_[kSouthEast] = { .neigh_x = 0x86, .neigh_y = 0x82, .neigh_dir = kNorthWest, .pixel_offset = 0 };
+    neighbors_[kSouthWest] = { .neigh_x = 0x84, .neigh_y = 0x82, .neigh_dir = kNorthEast, .pixel_offset = 3 };
   }
-  
+
   // Call this function from the loop() handler.
   void Loop() {
     auto millis = iface_->millis();
@@ -327,18 +327,20 @@ private:
         curr_hash_ = 0;
         seen_non_zero_ = false;
         return;
-      case Defs::kReportCalibration: {
-        extern uint64_t channel_sum[2][4];
-        extern unsigned channel_count[2][4];
-        uint8_t x = (channel_sum[0][0] / channel_count[0][0]) >> 4;
-        uint8_t y = (channel_sum[0][2] / channel_count[0][2]) >> 4;
-        iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, x, y, Defs::kCalibrationData));
-        return;
-      }
-      case Defs::kReportAddress: {
-        iface_->SendEvent(Defs::CreateEvent(Defs::kCurrentAddressReport, GetX(), GetY(), iface_->GetGlobalAddress() & 0xffffu));
-        return;
-      }
+      case Defs::kReportCalibration:
+        {
+          extern uint64_t channel_sum[2][4];
+          extern unsigned channel_count[2][4];
+          uint8_t x = (channel_sum[0][0] / channel_count[0][0]) >> 4;
+          uint8_t y = (channel_sum[0][2] / channel_count[0][2]) >> 4;
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, x, y, Defs::kCalibrationData));
+          return;
+        }
+      case Defs::kReportAddress:
+        {
+          iface_->SendEvent(Defs::CreateEvent(Defs::kCurrentAddressReport, GetX(), GetY(), iface_->GetGlobalAddress() & 0xffffu));
+          return;
+        }
     }
   }
 
@@ -701,26 +703,35 @@ private:
   // Evoution speed = 10000 msec
   static constexpr unsigned kMenuSpeedVerySlow = 7;
 
-  
+
   // After this: every button pressed will add that bit to the pattern.
   static constexpr unsigned kSetBit = 8;
 
   // Pressing a button will add three horizontal bits from the given place.
   static constexpr unsigned kAddTrio = 9;
 
+  // Pressing a button will add a glider in random direction.
+  static constexpr unsigned kAddRandomGlider = 10;
+
   // Clear the entire board.
   static constexpr unsigned kMenuEmpty = 11;
-  
-  
+
+  // Pressing a button will add a glider in SE.
+  static constexpr unsigned kAddGliderSE = 12;
+  static constexpr unsigned kAddGliderNE = 13;
+  static constexpr unsigned kAddGliderNW = 14;
+  static constexpr unsigned kAddGliderSW = 15;
+
+
   void ExitMenu() {
     menu_active_ = 0;
     menu_selected_ = kMenuNone;
   }
-  
+
   void ExecuteButton(int x, int y, unsigned btn) {
     if (menu_selected_ == kMenuNone) {
       menu_selected_ = btn;
-      switch(menu_selected_) {
+      switch (menu_selected_) {
         case kMenuStop:
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStopIteration));
           return ExitMenu();
@@ -744,10 +755,10 @@ private:
           return ExitMenu();
         case kMenuSpeedVerySlow:
           evolution_speed_msec_ = 10000;
-          return ExitMenu();          
+          return ExitMenu();
       }
     } else {
-      switch(menu_selected_) {
+      switch (menu_selected_) {
         case kSetBit:
           AddBit(x, y, 0, 0, btn);
           return;
@@ -755,6 +766,9 @@ private:
           AddBit(x, y, 0, 0, btn);
           AddBit(x, y, 1, 0, btn);
           AddBit(x, y, 2, 0, btn);
+          return;
+        case kAddRandomGlider:
+          AddGlider(rand() % 4, x, y, btn);
           return;
         default:
           return ExitMenu();
@@ -787,9 +801,42 @@ private:
       x--;
       c += 4;
     }
-    iface_->SendEvent(Defs::CreateEvent(Defs::kStateOr, x, y, 1u<<((r*4)+c)));
-  }  
-  
+    iface_->SendEvent(Defs::CreateEvent(Defs::kStateOr, x, y, 1u << ((r * 4) + c)));
+  }
+
+  /// Adds a glider. x,y is a board, btn is a button where the glider
+  /// originates.
+  /// dir is a direction, 0 is SE.
+  void AddGlider(uint8_t dir, uint8_t x, uint8_t y, unsigned btn) {
+    AddBit(x, y, 0, 0, btn);
+    switch (dir & 3) {
+      case 0:
+        AddBit(x, y, 1, 0, btn);
+        AddBit(x, y, 2, 0, btn);
+        AddBit(x, y, 2, -1, btn);
+        AddBit(x, y, 1, -2, btn);
+        return;
+      case 1:
+        AddBit(x, y, 0, -1, btn);
+        AddBit(x, y, 0, -2, btn);
+        AddBit(x, y, -1, -2, btn);
+        AddBit(x, y, -2, -1, btn);
+        return;
+      case 2:
+        AddBit(x, y, -1, 0, btn);
+        AddBit(x, y, -2, 0, btn);
+        AddBit(x, y, -2, 1, btn);
+        AddBit(x, y, -1, 2, btn);
+        return;
+      case 3:
+        AddBit(x, y, 0, 1, btn);
+        AddBit(x, y, 0, 2, btn);
+        AddBit(x, y, 1, 2, btn);
+        AddBit(x, y, 2, 1, btn);
+        return;
+    }
+  }
+
   static constexpr inline uint32_t rotl32(uint32_t x, uint32_t n) {
     return (x << n) | (x >> (32 - n));
   }
