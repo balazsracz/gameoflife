@@ -717,10 +717,10 @@ private:
   static constexpr unsigned kMenuEmpty = 11;
 
   // Pressing a button will add a glider in SE.
-  static constexpr unsigned kAddGliderSE = 12;
-  static constexpr unsigned kAddGliderNE = 13;
-  static constexpr unsigned kAddGliderNW = 14;
-  static constexpr unsigned kAddGliderSW = 15;
+  static constexpr unsigned kAddGliderSE = 14;
+  static constexpr unsigned kAddGliderNE = 15;
+  static constexpr unsigned kAddGliderNW = 17;
+  static constexpr unsigned kAddGliderSW = 18;
 
 
   void ExitMenu() {
@@ -769,6 +769,18 @@ private:
           return;
         case kAddRandomGlider:
           AddGlider(rand() % 4, x, y, btn);
+          return;
+        case kAddGliderSE:
+          AddGlider(0, x, y, btn);
+          return;
+        case kAddGliderNE:
+          AddGlider(1, x, y, btn);
+          return;
+        case kAddGliderNW:
+          AddGlider(2, x, y, btn);
+          return;
+        case kAddGliderSW:
+          AddGlider(3, x, y, btn);
           return;
         default:
           return ExitMenu();
