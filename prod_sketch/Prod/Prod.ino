@@ -208,6 +208,14 @@ void SendStateReport() {
   SendEvent(Defs::CreateEvent(Defs::kStateReport, engine.GetX(), engine.GetY(), report));
 }
 
+/// turns on a LED, including state tracking.
+/// @param r the row (0..3)
+/// @param c the column (0..3)
+void AddLed(unsigned r, unsigned c) {
+  state[r+1][c+1] = true;
+  leds[r*4 + c] = true;
+}
+
 void OnGlobalEvent(uint64_t ev, uint16_t src) {
   using Defs = ::ProtocolDefs;
   //SerialUSB.printf("event arrived: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
@@ -263,6 +271,36 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
       case Defs::kReportState:
         {
           SendStateReport();
+          break;
+        }
+      case Defs::kPrintNeighborDebug:
+        {
+          AddLed(2,2);
+          AddLed(3,3);
+          if (!engine.neighbors_[kNorth].valid()) {
+            AddLed(0, 1); AddLed(0, 2);
+          }
+          if (!engine.neighbors_[kEast].valid()) {
+            AddLed(1, 3); AddLed(2, 3);
+          }
+          if (!engine.neighbors_[kSouth].valid()) {
+            AddLed(3, 1); AddLed(3, 2);
+          }
+          if (!engine.neighbors_[kWest].valid()) {
+            AddLed(1, 0); AddLed(2, 0);
+          }
+          if (!engine.neighbors_[kNorthEast].valid()) {
+            AddLed(0, 3);
+          }
+          if (!engine.neighbors_[kNorthWest].valid()) {
+            AddLed(0, 0);
+          }
+          if (!engine.neighbors_[kSouthWest].valid()) {
+            AddLed(3, 0);
+          }
+          if (!engine.neighbors_[kSouthEast].valid()) {
+            AddLed(3, 3);
+          }
           break;
         }
       default: break;

@@ -936,6 +936,10 @@ public:
     // For corner links (NE, SE, SW, NW), this index pinpoints which bit we are
     // talking about. 0..15.
     uint8_t pixel_offset{ 16 };
+    // @return true if this link is set up.
+    bool valid() {
+      return neigh_x != INVALID_COORD;
+    }
   };
   // Neighbor's assigned coordinates.
   std::vector<Link> neighbors_;
