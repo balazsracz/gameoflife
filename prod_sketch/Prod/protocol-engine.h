@@ -703,6 +703,12 @@ private:
   // Evoution speed = 10000 msec
   static constexpr unsigned kMenuSpeedVerySlow = 7;
 
+  // Clear table and stop
+  static constexpr unsigned kMenuClearAndStop = 12;
+  // Put neighbor debug pattern up
+  static constexpr unsigned kMenuDebugNeighbor = 13;
+
+
 
   // After this: every button pressed will add that bit to the pattern.
   static constexpr unsigned kSetBit = 8;
@@ -755,6 +761,15 @@ private:
           return ExitMenu();
         case kMenuSpeedVerySlow:
           evolution_speed_msec_ = 10000;
+          return ExitMenu();
+        case kMenuClearAndStop:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kClearState));
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStopIteration));
+          return ExitMenu();
+        case kMenuDebugNeighbor:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kClearState));
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStopIteration));
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kPrintNeighborDebug));
           return ExitMenu();
       }
     } else {

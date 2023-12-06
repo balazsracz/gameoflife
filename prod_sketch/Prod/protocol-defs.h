@@ -142,8 +142,10 @@ public:
     kCalibrationData = 18,
     // Reports x-y and address low byte.
     kReportAddress = 20,
+    // Reports x-y and address low byte.
+    kPrintNeighborDebug = 21,
 
-    // next = 21.
+    // next = 22.
   };
 
   // Checks if an event belong to this protocol.
