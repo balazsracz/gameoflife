@@ -265,6 +265,7 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
         {
           memset(state, 0, sizeof(state));
           memset(next_state, 0, sizeof(next_state));
+          memset(leds, 0, sizeof(leds));
           SendStateReport();
           break;
         }
@@ -276,7 +277,7 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
       case Defs::kPrintNeighborDebug:
         {
           AddLed(2,2);
-          AddLed(3,3);
+          AddLed(1,1);
           if (!engine.neighbors_[kNorth].valid()) {
             AddLed(0, 1); AddLed(0, 2);
           }
