@@ -103,9 +103,10 @@ public:
     if (need_init_done_ && iface_->GetAlias() != 0 && !iface_->TxPending()) {
       iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kInitDone));
       need_init_done_ = false;
-      idle_timeout_ = millis + 10;
+      // Waits half a second before starting a leader election.
+      election_start_timeout_ = millis + 500;
     }
-    if (!need_init_done_ && !seen_leader_ && !to_leader_election_ && millis >= idle_timeout_) {
+    if (!need_init_done_ && !seen_leader_ && !to_leader_election_ && millis >= election_start_timeout_) {
       // Let's trigger a leader election.
       ParticipateLeaderElection();
     }
@@ -945,6 +946,9 @@ public:
   std::vector<Link> neighbors_;
 
 private:
+  // millis() tick when we start the leader election after startup
+  uint32_t election_start_timeout_{ INVALID_TIMEOUT };
+
   // millis() tick when we claim the bus is idle.
   uint32_t idle_timeout_{ INVALID_TIMEOUT };
 
