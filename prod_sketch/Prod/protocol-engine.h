@@ -50,6 +50,9 @@ public:
   /// @return a but mask for leds 1..16 to light up.
   uint16_t GetMenuLeds() {
     uint16_t ret = 0;
+    if (disc_state_ != kNotRunning) {
+      return 0xffff;
+    }
     auto m = iface_->millis();
     unsigned blk = (m & 1023) / 128; // 0..7
     if (is_leader_ && menu_active_ && (blk & 2)) {
