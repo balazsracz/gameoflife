@@ -419,6 +419,7 @@ private:
     num_bad_states_ = kDeadBoardIterationThreshold - 2;
     detect_steady_state_ = true;
     menu_active_ = false;
+    menu_second_page_ = false;
     menu_selected_ = kMenuNone;
   }
 
@@ -721,7 +722,8 @@ private:
   // Put neighbor debug pattern up
   static constexpr unsigned kMenuDebugNeighbor = 13;
 
-
+  // Switch between first and second menu page.
+  static constexpr unsigned kSecondMenu = 15;
 
   // After this: every button pressed will add that bit to the pattern.
   static constexpr unsigned kSetBit = 8;
@@ -1011,6 +1013,8 @@ private:
 
   // menu is active
   bool menu_active_ : 1;
+  // true if we are on the second page of the menu.
+  bool menu_second_page_ : 1;
   // What menu item is selected right now.
   uint8_t menu_selected_ : 5;
 
