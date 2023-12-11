@@ -46,8 +46,17 @@ public:
     return my_y_;
   }
 
-  bool ShouldBlinkMenu() {
-    return is_leader_ && menu_active_;
+  /// tells which LEDs the leader wants to light.
+  /// @return a but mask for leds 1..16 to light up.
+  uint16_t GetMenuLeds() {
+    uint16_t ret = 0;
+    auto m = iface_->millis();
+    unsigned blk = (m & 1023) / 128; // 0..7
+    if (is_leader_ && menu_active_ && (blk & 2)) {
+      // light up 4 corners.
+      return 0b1001000000001001;
+    }
+    return 0;
   }
 
   // Call this function once from setup().

@@ -136,13 +136,10 @@ void Timer6000Hz() {
   CharlieApply(kCharlieProgramA, kLedChC, &leds[14], state);
 }
 
-void MenuBlink(int counter);
-
 // This function will be called 4 times per second by the timer.
 void Timer4Hz() {
   static int ctr = 0;
   ++ctr;
-  MenuBlink(ctr);
 }
 
 
@@ -178,21 +175,6 @@ struct Delta {
 static constexpr Delta neighbors[8] = {
   { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 }, { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 }
 };
-
-void MenuBlink(int ctr) {
-  static bool blinking = false;
-
-  if (engine.ShouldBlinkMenu()) {
-    leds[0] = leds[3] = leds[12] = leds[15] = (ctr % 2);
-    blinking = true;
-  } else if (blinking) {
-    blinking = false;
-    leds[0] = state[1][1];
-    leds[3] = state[1][4];
-    leds[12] = state[4][1];
-    leds[15] = state[4][4];
-  }
-}
 
 void SendStateReport() {
   using Defs = ::ProtocolDefs;
@@ -678,6 +660,13 @@ void loop() {
   engine.Loop();
 
   ProcessButtons();
+
+  uint16_t menu_leds = engine.GetMenuLeds();
+  for (int r = 0; r < 4; ++r) {
+    for (int c = 0; c < 4; c++) {
+      leds[r*4+c] = state[r+1][c+1] || (menu_leds & (1u << (r*4+c)));
+    }
+  }
 
   digitalWrite(kLed13Pin, !leds[13 - 1]);
   digitalWrite(kLed14Pin, !leds[14 - 1]);
