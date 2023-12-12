@@ -728,11 +728,14 @@ private:
   // Put neighbor debug pattern up
   static constexpr unsigned kMenuDebugNeighbor = 13;
 
+  // Reinit all other nodes
+  static constexpr unsigned kMenuRequestReInit = 8;
+
   // Switch between first and second menu page.
   static constexpr unsigned kSecondMenu = 15;
 
   // After this: every button pressed will add that bit to the pattern.
-  static constexpr unsigned kSetBit = 8;
+  static constexpr unsigned kSetBit = 28;
 
   // Pressing a button will add three horizontal bits from the given place.
   static constexpr unsigned kAddTrio = 9;
@@ -782,6 +785,9 @@ private:
           return ExitMenu();
         case kMenuSpeedVerySlow:
           evolution_speed_msec_ = 10000;
+          return ExitMenu();
+        case kMenuRequestReInit:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kReInit));
           return ExitMenu();
         case kMenuClearAndStop:
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kClearState));
