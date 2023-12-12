@@ -148,8 +148,10 @@ public:
     kFindLeader = 22,
     // Print X-Y coordinates on the screen.
     kPrintXY = 23,
+    // Stops all local signals. Not implemented
+    kStopAllLocal = 24,
 
-    // next = 24.
+    // next = 25.
   };
 
   // Checks if an event belong to this protocol.
