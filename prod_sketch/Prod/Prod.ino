@@ -198,6 +198,18 @@ void AddLed(unsigned r, unsigned c) {
   leds[r*4 + c] = true;
 }
 
+/// Outputs a binary value (last 4 bits) to a given row of LEDs, LSB-right.
+/// Turns on exactly one LED one line below to show the mod-4 of the value.
+/// @param row 0 to 2
+void DisplayBinaryValue(unsigned row, uint8_t value) {
+  for (int c = 3; c >= 0; --c) {
+    if (value & (1u << c)) {
+      AddLed(row, c);
+    }
+  }
+  AddLed(row + 1, value & 3);
+}
+
 void OnGlobalEvent(uint64_t ev, uint16_t src) {
   using Defs = ::ProtocolDefs;
   //SerialUSB.printf("event arrived: %08lx%08lx\n", ev >> 32, ev & 0xfffffffful);
@@ -284,6 +296,15 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
           if (!engine.neighbors_[kSouthEast].valid()) {
             AddLed(3, 3);
           }
+          break;
+        }
+      case Defs::kPrintXY:
+        {
+          memset(state, 0, sizeof(state));
+          memset(next_state, 0, sizeof(next_state));
+          memset(leds, 0, sizeof(leds));
+          DisplayBinaryValue(0, engine.GetX());
+          DisplayBinaryValue(2, engine.GetY());
           break;
         }
       default: break;

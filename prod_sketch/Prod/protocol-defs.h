@@ -146,8 +146,10 @@ public:
     kPrintNeighborDebug = 21,
     // Leader should reply with IAmLeader.
     kFindLeader = 22,
+    // Print X-Y coordinates on the screen.
+    kPrintXY = 23,
 
-    // next = 23.
+    // next = 24.
   };
 
   // Checks if an event belong to this protocol.
