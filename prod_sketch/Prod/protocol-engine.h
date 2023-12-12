@@ -706,12 +706,7 @@ private:
   }
 
   // No menu entry selected.
-  static constexpr unsigned kMenuNone = 16;
-  // These buttons set the table's speed.
-  static constexpr unsigned kMenuSpeed025 = 4;
-  static constexpr unsigned kMenuSpeed05 = 5;
-  static constexpr unsigned kMenuSpeed1 = 6;
-  static constexpr unsigned kMenuSpeed10 = 7;
+  static constexpr unsigned kMenuNone = 31;
 
   // Turns off iteration.
   static constexpr unsigned kMenuStop = 0;
@@ -731,35 +726,40 @@ private:
   // Evoution speed = 10000 msec
   static constexpr unsigned kMenuSpeedVerySlow = 7;
 
-  // Clear table and stop
-  static constexpr unsigned kMenuClearAndStop = 12;
-  // Put neighbor debug pattern up
-  static constexpr unsigned kMenuDebugNeighbor = 13;
+  // Pressing a button will add a glider in SE.
+  static constexpr unsigned kAddGliderSE = 8;
+  static constexpr unsigned kAddGliderNE = 9;
+  static constexpr unsigned kAddGliderNW = 10;
+  static constexpr unsigned kAddGliderSW = 11;
 
-  // Reinit all other nodes
-  static constexpr unsigned kMenuRequestReInit = 8;
+  // Pressing a button will add a glider in random direction.
+  static constexpr unsigned kAddRandomGlider = 12;
+
+  // Pressing a button will add three horizontal bits from the given place.
+  static constexpr unsigned kAddTrio = 13;
+
+  // After this: every button pressed will add that bit to the pattern.
+  static constexpr unsigned kSetBit = 14;
 
   // Switch between first and second menu page.
   static constexpr unsigned kSecondMenu = 15;
+  
 
-  // After this: every button pressed will add that bit to the pattern.
-  static constexpr unsigned kSetBit = 28;
-
-  // Pressing a button will add three horizontal bits from the given place.
-  static constexpr unsigned kAddTrio = 9;
-
-  // Pressing a button will add a glider in random direction.
-  static constexpr unsigned kAddRandomGlider = 10;
+  // SECOND MENU PAGE
 
   // Clear the entire board.
-  static constexpr unsigned kMenuEmpty = 11;
+  //  static constexpr unsigned kMenuEmpty = 16;
 
-  // Pressing a button will add a glider in SE.
-  static constexpr unsigned kAddGliderSE = 14;
-  static constexpr unsigned kAddGliderNE = 15;
-  static constexpr unsigned kAddGliderNW = 17;
-  static constexpr unsigned kAddGliderSW = 18;
+  // Clear table and stop
+  static constexpr unsigned kMenuClearAndStop = 16;
+  // Put neighbor debug pattern up
+  static constexpr unsigned kMenuDebugXY = 17;
+  // Put neighbor debug pattern up
+  static constexpr unsigned kMenuDebugNeighbor = 18;
+  // Reinit all other nodes
+  static constexpr unsigned kMenuRequestReInit = 19;
 
+  
 
   void ExitMenu() {
     menu_active_ = 0;
@@ -769,7 +769,17 @@ private:
   void ExecuteButton(int x, int y, unsigned btn) {
     if (menu_selected_ == kMenuNone) {
       menu_selected_ = btn;
+      if (menu_second_page_) {
+        menu_selected_ += 16;
+      }
       switch (menu_selected_) {
+        // These items are after the first press of the menu button.
+        case kSecondMenu:
+        case kSecondMenu + 16:
+          menu_second_page_ ^= 1;
+          // We want another menu button press.
+          menu_selected_ = kMenuNone;
+          return;
         case kMenuStop:
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStopIteration));
           return ExitMenu();
