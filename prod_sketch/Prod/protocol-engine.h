@@ -54,7 +54,7 @@ public:
       return 0xffff;
     }
     auto m = iface_->millis();
-    unsigned blk = (m & 1023) / 128; // 0..7
+    unsigned blk = (m & 1023) / 128;  // 0..7
     if (is_leader_ && menu_active_ && (blk & 2)) {
       // light up 4 corners.
       return 0b1001000000001001;
@@ -134,7 +134,7 @@ public:
       need_partial_discovery_ = false;
     }
     DoDiscovery();
-    if (run_tick_ && millis >= tick_timeout_) {
+    if (run_tick_ && disc_state_ == kNotRunning && millis >= tick_timeout_) {
       auto ev = Defs::CreateGlobalCmd(Defs::kEvolveAndReport);
       iface_->SendEvent(ev);
       tick_timeout_ += evolution_speed_msec_;
@@ -420,8 +420,8 @@ private:
     disc_catchup_pending_ = false;
     disc_state_ = kNotRunning;
     evolution_speed_msec_ = Defs::kDefaultEvolutionSpeedMsec;
-    tick_timeout_ = 0;
-    run_tick_ = false;
+    tick_timeout_ = INVALID_TIMEOUT;
+    run_tick_ = true;
     num_bad_states_ = kDeadBoardIterationThreshold - 2;
     detect_steady_state_ = true;
     menu_active_ = false;
@@ -496,7 +496,7 @@ private:
       case kNotRunning:
         return;
       case kWaitForSetup:
-        run_tick_ = false;
+        //run_tick_ = false;
         if (iface_->GetAlias() == 0) { return; }
         if (iface_->TxPending()) { return; }
         need_partial_discovery_ = false;
@@ -576,11 +576,11 @@ private:
 
       case kDiscoveryDone:
         disc_state_ = kNotRunning;
-        run_tick_ = true;
+        //run_tick_ = true;
         tick_timeout_ = iface_->millis();
         return;
       case kPartialSendSetup:
-        run_tick_ = false;
+        //run_tick_ = false;
         iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kLocalToggleUnassigned));
         disc_catchup_pending_ = true;
         need_partial_discovery_ = false;
