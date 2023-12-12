@@ -182,7 +182,7 @@ public:
           if (to_disc_neighbor_lookup_) {
             to_disc_neighbor_lookup_ = false;
             disc_timeout_ = INVALID_TIMEOUT;
-            AddNodeToDiscovery(pending_x_, pending_y_, src);
+            AddNodeToDiscovery(leader_pending_x_, leader_pending_y_, src);
           }
           pending_x_ = INVALID_COORD;
           pending_y_ = INVALID_COORD;
@@ -412,7 +412,7 @@ private:
     to_leader_election_ = false;
     to_disc_neighbor_lookup_ = false;
     next_neighbor_report_ = INVALID_DIR;
-    my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
+    my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = leader_pending_x_ = leader_pending_y_ = INVALID_COORD;
     timeout_ = INVALID_TIMEOUT;
     election_start_timeout_ = INVALID_TIMEOUT;
     idle_timeout_ = iface_->millis() + 10;
@@ -562,6 +562,8 @@ private:
           uint8_t nx = x + deltax[disc_neighbor_dir_];
           uint8_t ny = y + deltay[disc_neighbor_dir_];
           to_disc_neighbor_lookup_ = true;
+          leader_pending_x_ = nx;
+          leader_pending_y_ = ny;
           disc_timeout_ = iface_->millis() + kLocalNeighborLookupTimeoutMsec;
           iface_->SendEvent(Defs::CreateEvent(Defs::kLocalAssign, nx, ny));
           iface_->SendEvent(Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)disc_neighbor_dir_));
@@ -972,6 +974,9 @@ private:
   // Coordinates to be assigned via a local signal. This is already adjusted from the neighbor with deltaxy.
   uint8_t pending_x_{ INVALID_COORD };
   uint8_t pending_y_{ INVALID_COORD };
+  // New coordinates being assigned by the leader.
+  uint8_t leader_pending_x_{ INVALID_COORD };
+  uint8_t leader_pending_y_{ INVALID_COORD };
 
   // Which neighbor was recently instructed to do a local trigger.
   uint8_t pending_neigh_x_{ INVALID_COORD };
