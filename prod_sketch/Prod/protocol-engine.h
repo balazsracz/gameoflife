@@ -811,6 +811,9 @@ private:
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kClearState));
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStopIteration));
           return ExitMenu();
+        case kMenuDebugXY:
+          iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kPrintXY));
+          return ExitMenu();
         case kMenuDebugNeighbor:
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kClearState));
           iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, 0, 0, Defs::kStopIteration));
@@ -819,6 +822,8 @@ private:
       }
     } else {
       switch (menu_selected_) {
+        // These items do something with the x-y after a given menu entry was
+        // selected.
         case kSetBit:
           AddBit(x, y, 0, 0, btn);
           return;
@@ -1046,7 +1051,7 @@ private:
   // true if we are on the second page of the menu.
   bool menu_second_page_ : 1;
   // What menu item is selected right now.
-  uint8_t menu_selected_ : 5;
+  uint8_t menu_selected_ : 6;
 
   // Last direction we queried for the node in the head of the queue. -1 .. 3.
   int disc_neighbor_dir_ : 4;
