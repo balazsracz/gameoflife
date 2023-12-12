@@ -284,6 +284,14 @@ private:
         // Forgets all diagonal neighbors.
         neighbors_.resize(4);
         neighbors_.resize(8);
+        if (my_x_ != INVALID_COORD && my_y_ != INVALID_COORD) {
+          // Fakes neighbor statements.
+          for (auto dir :  { kNorth, kEast, kSouth, kWest }) {
+            neighbors_[dir].neigh_x = my_x_ + deltax[dir];
+            neighbors_[dir].neigh_y = my_y_ + deltay[dir];
+            neighbors_[dir].neigh_dir = (Direction)((dir + 2) % 4);
+          }
+        }
         return;
       case Defs::kIAmLeader:
         if (src == iface_->GetAlias()) return;
