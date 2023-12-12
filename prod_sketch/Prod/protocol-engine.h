@@ -406,6 +406,7 @@ private:
     next_neighbor_report_ = INVALID_DIR;
     my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = INVALID_COORD;
     timeout_ = INVALID_TIMEOUT;
+    election_start_timeout_ = INVALID_TIMEOUT;
     idle_timeout_ = iface_->millis() + 10;
     neighbors_.clear();
     neighbors_.resize(8);  // number of directions
