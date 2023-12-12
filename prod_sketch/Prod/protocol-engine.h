@@ -314,6 +314,11 @@ private:
           to_cancel_local_signal_ = true;
         }
         return;
+      case Defs::kFindLeader:
+        if (is_leader_) {
+          iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kIAmLeader));
+        }
+        return;
       case Defs::kStartIteration:
         if (is_leader_) {
           run_tick_ = true;

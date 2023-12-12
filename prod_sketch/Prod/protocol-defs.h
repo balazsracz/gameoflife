@@ -144,8 +144,10 @@ public:
     kReportAddress = 20,
     // Reports x-y and address low byte.
     kPrintNeighborDebug = 21,
+    // Leader should reply with IAmLeader.
+    kFindLeader = 22,
 
-    // next = 22.
+    // next = 23.
   };
 
   // Checks if an event belong to this protocol.
