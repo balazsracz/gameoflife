@@ -47,17 +47,25 @@ public:
   }
 
   /// tells which LEDs the leader wants to light.
-  /// @return a but mask for leds 1..16 to light up.
-  uint16_t GetMenuLeds() {
+  /// @return a but mask for leds 1..16 to light up. The high bits specify
+  /// which LEDs should be set to zero as well.
+  uint32_t GetMenuLeds() {
     uint16_t ret = 0;
     if (disc_state_ != kNotRunning) {
       return 0xffff;
     }
     auto m = iface_->millis();
     unsigned blk = (m & 1023) / 128;  // 0..7
-    if (is_leader_ && menu_active_ && (blk & 2)) {
+    if (is_leader_ && menu_active_ ) {
+      static constexpr unsigned corners = 0b1001000000001001;
       // light up 4 corners.
-      return 0b1001000000001001;
+      uint32_t ret = corners << 16;
+      if (menu_second_page_) {
+        if (blk & 1) ret |= corners;
+      } else {
+        if (blk & 2) ret |= corners;
+      }
+      return ret;
     }
     return 0;
   }

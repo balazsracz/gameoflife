@@ -682,10 +682,10 @@ void loop() {
 
   ProcessButtons();
 
-  uint16_t menu_leds = engine.GetMenuLeds();
+  uint32_t menu_leds = engine.GetMenuLeds();
   for (int r = 0; r < 4; ++r) {
     for (int c = 0; c < 4; c++) {
-      leds[r*4+c] = state[r+1][c+1] || (menu_leds & (1u << (r*4+c)));
+      leds[r*4+c] = (state[r+1][c+1] && !(menu_leds & (0x10000u << (r*4+c)))) || (menu_leds & (1u << (r*4+c)));
     }
   }
 
