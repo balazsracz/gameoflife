@@ -1444,7 +1444,7 @@ void handle_init() {
       {
         auto node = nmranet_nodeid();
         if (!state_.alias) {
-          state_.alias = (node & 0xfff) ^ ((node >> 12) & 0xfff) ^ ((node >> 24) & 0xfff) ^ ((node >> 36) & 0xfff);
+          state_.alias = (node & 0xfff) ^ ((node >> 12) & 0xfff) ^ ((node >> 24) & 0xfff) ^ ((node >> 36) & 0xfff) ^ 0x100 ^ 0x018 ^ 0x101 ^ 0x050;
           if (!state_.alias) { state_.alias = 1; }
           if ((node & 0xff) == 3) { state_.alias = 1; }
         } else {
