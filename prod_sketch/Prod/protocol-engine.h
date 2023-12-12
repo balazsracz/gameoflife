@@ -516,7 +516,12 @@ private:
         return;
       case kSendSetup:
         // Requests everyone else to drop their state.
-        iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kReInit));
+        
+        // TODO: this reinit was here to ensure that the system starts up in a
+        // definite state. However, it ended up causing infinite loops during
+        // startup.
+
+        //iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kReInit));
         idle_timeout_ = iface_->millis() + 10;
         disc_state_ = kWaitForSetupResponses;
         return;
@@ -640,6 +645,8 @@ private:
         if (my_x_ != pending_x_ || my_y_ != pending_y_) {
           // Error: we have to different set of coordinates.
           iface_->SendEvent(Defs::CreateEvent(Defs::kLocalConflict, my_x_, my_y_, pending_x_, pending_y_));
+          my_x_ = pending_x_;
+          my_y_ = pending_y_;
         } else if (to_disc_neighbor_lookup_) {
           // search for neighbors reached back to the master
           to_disc_neighbor_lookup_ = false;
