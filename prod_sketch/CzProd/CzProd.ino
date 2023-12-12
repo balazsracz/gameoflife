@@ -402,6 +402,11 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
       }
     case Defs::kStateSet:
       {
+        uint8_t x = Defs::GetX(ev);
+        uint8_t y = Defs::GetY(ev);
+        if (x != engine.GetX() || y != engine.GetY()) {
+          break;
+        }
         unsigned new_state = Defs::GetArg(ev);
         my_state.set_all(new_state);
         ReportState();
@@ -410,6 +415,11 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
       }
     case Defs::kStateOr:
       {
+        uint8_t x = Defs::GetX(ev);
+        uint8_t y = Defs::GetY(ev);
+        if (x != engine.GetX() || y != engine.GetY()) {
+          break;
+        }
         unsigned new_state = Defs::GetArg(ev);
         my_state.or_all(new_state);
         my_state.blit_to_fb(leds);
@@ -435,7 +445,7 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
 void MenuBlink(int ctr) {
   static bool blinking = false;
 
-  /// @todo take into account what menu leds should be blinked. 
+  /// @todo take into account what menu leds should be blinked.
   if (engine.GetMenuLeds() != 0) {
     leds[0] = leds[3] = leds[12] = leds[15] = (ctr % 2);
     blinking = true;
