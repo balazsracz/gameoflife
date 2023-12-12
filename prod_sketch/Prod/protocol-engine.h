@@ -322,6 +322,11 @@ private:
           to_cancel_local_signal_ = true;
         }
         return;
+      case Defs::kStopAllLocal:
+        for (auto dir : { kNorth, kEast, kSouth, kWest }) {
+          iface_->LocalBusSignal(dir, false);
+        }
+        return;
       case Defs::kFindLeader:
         if (is_leader_) {
           iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kIAmLeader));
@@ -504,6 +509,7 @@ private:
     kSendLocalAssign,
     kWaitLocalTriggerSend,
     kWaitLocalFeedback,
+    kWaitLocalCancel,
     // Iteration end
     kSendNeighborReport,
     kWaitNeighborResponses,
@@ -583,7 +589,6 @@ private:
           to_disc_neighbor_lookup_ = true;
           leader_pending_x_ = nx;
           leader_pending_y_ = ny;
-          disc_timeout_ = iface_->millis() + kLocalNeighborLookupTimeoutMsec;
           iface_->SendEvent(Defs::CreateEvent(Defs::kLocalAssign, nx, ny));
           iface_->SendEvent(Defs::CreateEvent(Defs::kToggleLocalSignal, x, y, 0, 0, (Direction)disc_neighbor_dir_));
           disc_state_ = kWaitLocalTriggerSend;
@@ -591,11 +596,17 @@ private:
         }
       case kWaitLocalTriggerSend:
         if (iface_->TxPending()) return;
+        disc_timeout_ = iface_->millis() + kLocalNeighborLookupTimeoutMsec;
         disc_state_ = kWaitLocalFeedback;
         return;
       case kWaitLocalFeedback:
         if (to_disc_neighbor_lookup_ && (iface_->millis() < disc_timeout_)) return;
         to_disc_neighbor_lookup_ = false;
+        iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kStopAllLocal));
+        disc_state_ = kWaitLocalCancel;
+        return;
+      case kWaitLocalCancel:
+        if (iface_->TxPending()) return;
         disc_state_ = kIterationFirst;
         return;
       // end of iteration.
