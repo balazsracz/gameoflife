@@ -435,7 +435,8 @@ void OnGlobalEvent(uint64_t ev, uint16_t src) {
 void MenuBlink(int ctr) {
   static bool blinking = false;
 
-  if (engine.ShouldBlinkMenu()) {
+  /// @todo take into account what menu leds should be blinked. 
+  if (engine.GetMenuLeds() != 0) {
     leds[0] = leds[3] = leds[12] = leds[15] = (ctr % 2);
     blinking = true;
   } else if (blinking) {
