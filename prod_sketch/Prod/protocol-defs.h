@@ -142,7 +142,7 @@ public:
     kCalibrationData = 18,
     // Reports x-y and address low byte.
     kReportAddress = 20,
-    // Reports x-y and address low byte.
+    // Print a debug pattern on the screen about neighborship state.
     kPrintNeighborDebug = 21,
     // Leader should reply with IAmLeader.
     kFindLeader = 22,
@@ -150,8 +150,10 @@ public:
     kPrintXY = 23,
     // Stops all local signals. Not implemented
     kStopAllLocal = 24,
+    // Displays a debug pattern in geographical order.
+    kGeoDebugFlow = 25,
 
-    // next = 25.
+    // next = 26.
   };
 
   // Checks if an event belong to this protocol.

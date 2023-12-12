@@ -367,6 +367,14 @@ private:
           iface_->SendEvent(Defs::CreateEvent(Defs::kCurrentAddressReport, GetX(), GetY(), iface_->GetGlobalAddress() & 0xffffu));
           return;
         }
+      case Defs::kGeoDebugFlow:
+        {
+          if (!is_leader_) return;
+          geo_debug_it_ = known_nodes_.begin();
+          to_geo_debug_ = true;
+          timeout_ = iface_->millis();
+          return;
+        }
     }
   }
 
@@ -376,6 +384,16 @@ private:
     if (to_cancel_local_signal_) {
       CancelLocalSignal();
       to_cancel_local_signal_ = false;
+    }
+    if (to_geo_debug_) {
+      NodeCoord c = geo_debug_it_->first;
+      AddBit(GetCoordX(c), GetCoordY(c), 0, 0, 5);
+      geo_debug_it_++;
+      if (geo_debug_it_ == known_nodes_.end()) {
+        to_geo_debug_ = false;
+      } else {
+        timeout_ = iface_->millis() + kGeoDebugDelayMsec;
+      }
     }
   }
 
@@ -411,6 +429,7 @@ private:
     to_cancel_local_signal_ = false;
     to_leader_election_ = false;
     to_disc_neighbor_lookup_ = false;
+    to_geo_debug_ = false;
     next_neighbor_report_ = INVALID_DIR;
     my_x_ = my_y_ = pending_x_ = pending_y_ = pending_neigh_x_ = pending_neigh_y_ = leader_pending_x_ = leader_pending_y_ = INVALID_COORD;
     timeout_ = INVALID_TIMEOUT;
@@ -1037,6 +1056,7 @@ private:
   bool to_cancel_local_signal_ : 1;
   bool to_leader_election_ : 1;
   bool to_disc_neighbor_lookup_ : 1;
+  bool to_geo_debug_ : 1;
 
   // ==== Leader-only state ====
 
@@ -1079,7 +1099,11 @@ private:
   struct NodeInfo {
     uint16_t alias_;
   };
-  std::map<NodeCoord, NodeInfo> known_nodes_;
+  using NodeMap = std::map<NodeCoord, NodeInfo>;
+  NodeMap known_nodes_;
+  // Iterator for doing the geo debug print.
+  NodeMap::iterator geo_debug_it_;
+  static constexpr unsigned kGeoDebugDelayMsec = 200;
 
   // Hash values of recent history. Not implemented yet.
   //std::vector<uint64_t> hash_history_;
