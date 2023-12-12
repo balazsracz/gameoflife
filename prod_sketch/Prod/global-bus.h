@@ -171,7 +171,12 @@ uint32_t last_bus_off_millis = -1;
 /// Checks if we are in bus off state, i.e. when there is noone to receive the packets
 /// we are sending. Cancels pending sends after 1 msec.
 void check_for_bus_off() {
+  // TODO: this effectively disables bus off check. Should be added back.
+  last_bus_off_millis = -1;
+  return;
+
   auto m = millis();
+
   // If any of the warning/error-passive/bus-off conditions is true, the last transmission resulted in an error and we have
   // pending TX messages.
   if ((CAN->ESR & (CAN_ESR_EPVF | CAN_ESR_BOFF | CAN_ESR_EWGF)) && ((CAN->ESR & CAN_ESR_LEC_Msk) != 0) && lowlevel_can_tx_busy()) {
