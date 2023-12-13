@@ -291,6 +291,12 @@ private:
             neighbors_[dir].neigh_y = my_y_ + deltay[dir];
             neighbors_[dir].neigh_dir = (Direction)((dir + 2) % 4);
           }
+          for (int dir = 4; dir < 8; ++dir) {
+            neighbors_[dir].neigh_x = my_x_ + deltax[dir];
+            neighbors_[dir].neigh_y = my_y_ + deltay[dir];
+            neighbors_[dir].neigh_dir = (Direction)(((dir + 2) % 4) + 4);
+            neighbors_[dir].pixel_offset = oppcorner[dir];
+          }
         }
         return;
       case Defs::kIAmLeader:
@@ -429,10 +435,13 @@ private:
   using Defs = ProtocolDefs;
 
   // Indexed with a Direction (N,E,S,W), delta x coordinate.
-  static constexpr const int deltax[4] = { 0, 1, 0, -1 };
+  static constexpr const int deltax[8] = { 0, 1, 0, -1, -1,  1,  1, -1};
   // Indexed with a Direction, delta y coordinate.
-  static constexpr const int deltay[4] = { -1, 0, 1, 0 };
+  static constexpr const int deltay[8] = { -1, 0, 1, 0, -1, -1,  1,  1};
+  // Indexed with a Direction, opposite corner bit num.
+  static constexpr const int oppcorner[8] = { -1, -1, -1, -1, 15, 12, 0, 3};
 
+  
   static constexpr unsigned kLocalNeighborLookupTimeoutMsec = 8;
   static constexpr unsigned kLocalBusSignalTimeoutMsec = 4;
 
