@@ -119,7 +119,7 @@ void GlobalBusSetup() {
   GPIO_InitStruct.Pin = GPIO_PIN_8;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
   GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  //GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* disable sleep, enter init mode */
