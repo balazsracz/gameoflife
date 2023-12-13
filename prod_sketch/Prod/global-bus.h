@@ -137,7 +137,11 @@ void GlobalBusSetup() {
   /* Setup timing.
      * 125,000 Kbps = 8 usec/bit
      */
-  CAN->BTR = (CAN_BS1_5TQ | CAN_BS2_2TQ | CAN_SJW_1TQ | (48 - 1));
+  // This is with 8 TQ and 1.4% tolerance, max 50m
+  CAN->BTR = (CAN_BS1_4TQ | CAN_BS2_3TQ | CAN_SJW_3TQ | (48 - 1));
+
+  // This is with 12 tq and 1.6% tolerance, max 26m
+  //CAN->BTR = (CAN_BS1_6TQ | CAN_BS2_5TQ | CAN_SJW_4TQ | (32 - 1));
 
   /* enter normal mode */
   CAN->MCR &= ~CAN_MCR_INRQ;
