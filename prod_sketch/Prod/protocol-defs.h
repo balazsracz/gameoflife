@@ -160,8 +160,15 @@ public:
     kLoopCountReport = 28,
     // Reports info about CAN receive errors
     kErrorReport = 29,
+    // Sent by an unspecified node to trigger an oscillator test.
+    // ArgX*10 is the number of msec between sends. ArgY has MSB set if this is the first send,
+    // and the 7 LSB counts down to how many sends are remaining. 0 is the last send.
+    kOscTest = 30,
+    // Osc calibration report. Argx+y is the 1/256th percent of how far off the result is; with 0x8000
+    // being perfectly accurate, 0x8100 is 1% too fast, 0x7FFF is 1/256th of a percent too slow.
+    kOscReport = 31,
     
-    // next = 30.
+    // next = 32.
   };
 
   // Checks if an event belong to this protocol.
