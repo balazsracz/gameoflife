@@ -17,7 +17,7 @@ static constexpr int kMaxDirection = (int)kWest;
 struct ProtocolDefs {
 public:
   // How frequently we should emit evolution ticks.
-  static constexpr unsigned kDefaultEvolutionSpeedMsec = 250;
+  static constexpr unsigned kDefaultEvolutionSpeedMsec = 500;
 
   static constexpr uint64_t kEventPrefix = UINT64_C(0x09000D0000000000);
   static constexpr uint64_t kEventMask   = UINT64_C(0xFFFFFF0000000000);
@@ -137,7 +137,9 @@ public:
     // Finsh a firmware upgrade.
     kFinishFirmware = 16,
     // Requests to report calibration values for touch sensor
-    kReportCalibration = 17,
+    kFirmwareBlockComplete = 17,
+    // Requests to report calibration values for touch sensor
+    kReportCalibration = 26,
     // Data from touch sensor calibration in X/Y arguments.
     kCalibrationData = 18,
     // Reports x-y and address low byte.
