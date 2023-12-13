@@ -212,6 +212,9 @@ public:
           return;
         }
       case Defs::kReportNeighbor:
+        /// @todo we shouldn't really ignore these, but for address-based
+        /// reporting, it's ok.
+        return;
         for (auto dir : { kNorth, kEast, kSouth, kWest }) {
           if (neighbors_[dir].neigh_x == Defs::GetX(ev) && neighbors_[dir].neigh_y == Defs::GetY(ev)) {
             ProcessNeighborReport(dir, ev);
