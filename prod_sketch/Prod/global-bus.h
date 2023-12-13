@@ -225,11 +225,16 @@ bool try_send_can_frame(const struct can_frame &can_frame) {
   return true;
 }
 
+unsigned g_num_overruns = 0;
+
 bool read_can_frame(struct can_frame *can_frame) {
+  if (CAN->RF0R & CAN_RF0R_FOVR0) {
+    g_num_overruns++;
+    CAN->RF0R &= ~CAN_RF0R_FOVR0;
+  }
   if (!(CAN->RF0R & CAN_RF0R_FMP0)) {
     return false;
   }
-
   /* Read a message from CAN and clear the interrupt source */
   if (CAN->sFIFOMailBox[0].RIR & CAN_RI0R_IDE) {
     /* extended frame */
