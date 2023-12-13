@@ -56,7 +56,7 @@ public:
     }
     auto m = iface_->millis();
     unsigned blk = (m & 1023) / 128;  // 0..7
-    if (is_leader_ && menu_active_ ) {
+    if (is_leader_ && menu_active_) {
       static constexpr unsigned corners = 0b1001000000001001;
       // light up 4 corners.
       uint32_t ret = corners << 16;
@@ -99,6 +99,7 @@ public:
 
   // Call this function from the loop() handler.
   void Loop() {
+    ++loop_count_;
     auto millis = iface_->millis();
     if (millis >= timeout_) {
       HandleTimeout();
@@ -143,6 +144,9 @@ public:
     }
     DoDiscovery();
     if (run_tick_ && disc_state_ == kNotRunning && millis >= tick_timeout_) {
+      uint32_t err_reg = CAN->ESR;
+      iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, err_reg >> 24, err_reg & 0xff, Defs::kErrorReport));
+      
       auto ev = Defs::CreateGlobalCmd(Defs::kEvolveAndReport);
       iface_->SendEvent(ev);
       tick_timeout_ += evolution_speed_msec_;
@@ -223,14 +227,17 @@ public:
         return;
       case Defs::kStateReport:
         {
-          if (Defs::GetArg(ev) != 0) {
-            seen_non_zero_ = true;
+          if (is_leader_) {
+            num_seen_++;
+            if (Defs::GetArg(ev) != 0) {
+              seen_non_zero_ = true;
+            }
+            uint32_t report = ev & 0xffffffffu;
+            uint64_t h = Murmur3(report, 0xa81f4f4c);
+            h <<= 32;
+            h |= Murmur3(report, 0x7d55d81a);
+            curr_hash_ ^= h;
           }
-          uint32_t report = ev & 0xffffffffu;
-          uint64_t h = Murmur3(report, 0xa81f4f4c);
-          h <<= 32;
-          h |= Murmur3(report, 0x7d55d81a);
-          curr_hash_ ^= h;
           return;
         }
       case Defs::kButtonPressed:
@@ -289,7 +296,7 @@ private:
         neighbors_.resize(8);
         if (my_x_ != INVALID_COORD && my_y_ != INVALID_COORD) {
           // Fakes neighbor statements.
-          for (auto dir :  { kNorth, kEast, kSouth, kWest }) {
+          for (auto dir : { kNorth, kEast, kSouth, kWest }) {
             neighbors_[dir].neigh_x = my_x_ + deltax[dir];
             neighbors_[dir].neigh_y = my_y_ + deltay[dir];
             neighbors_[dir].neigh_dir = (Direction)((dir + 2) % 4);
@@ -359,22 +366,31 @@ private:
         run_tick_ = false;
         return;
       case Defs::kEvolveAndReport:
-        if (is_leader_) {
-          if (curr_hash_ == last_hash_[0] || curr_hash_ == last_hash_[1] || !seen_non_zero_) {
-            // uninteresting state
-            ++num_bad_states_;
-            if (num_bad_states_ > kDeadBoardIterationThreshold && detect_steady_state_) {
-              iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom));
+        {
+          if (is_leader_) {
+            extern unsigned g_num_overruns;
+            iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, (loop_count_ >> 8) & 0xff, loop_count_ & 0xff, (loop_count_ > 0xffff ? 0x8000 : 0) | (g_num_overruns << 8) | Defs::kLoopCountReport));
+            loop_count_ = 0;
+            g_num_overruns = 0;
+            bool is_bad = (curr_hash_ == last_hash_[0] || curr_hash_ == last_hash_[1] || !seen_non_zero_);
+            if (is_bad) {
+              // uninteresting state
+              ++num_bad_states_;
+              if (num_bad_states_ > kDeadBoardIterationThreshold && detect_steady_state_) {
+                iface_->SendEvent(Defs::CreateGlobalCmd(Defs::kSetStateRandom));
+              }
+            } else {
+              num_bad_states_ = 0;
             }
-          } else {
-            num_bad_states_ = 0;
+            iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, curr_hash_ & 0xff, (curr_hash_ >> 8) & 0xff, (is_bad ? 0x8000 : 0) | (num_seen_ << 8) | Defs::kSteadyStateReport));
           }
+          last_hash_[1] = last_hash_[0];
+          last_hash_[0] = curr_hash_;
+          curr_hash_ = 0;
+          num_seen_ = 0;
+          seen_non_zero_ = false;
+          return;
         }
-        last_hash_[1] = last_hash_[0];
-        last_hash_[0] = curr_hash_;
-        curr_hash_ = 0;
-        seen_non_zero_ = false;
-        return;
       case Defs::kReportCalibration:
         {
           extern uint64_t channel_sum[2][4];
@@ -438,13 +454,13 @@ private:
   using Defs = ProtocolDefs;
 
   // Indexed with a Direction (N,E,S,W), delta x coordinate.
-  static constexpr const int deltax[8] = { 0, 1, 0, -1, -1,  1,  1, -1};
+  static constexpr const int deltax[8] = { 0, 1, 0, -1, -1, 1, 1, -1 };
   // Indexed with a Direction, delta y coordinate.
-  static constexpr const int deltay[8] = { -1, 0, 1, 0, -1, -1,  1,  1};
+  static constexpr const int deltay[8] = { -1, 0, 1, 0, -1, -1, 1, 1 };
   // Indexed with a Direction, opposite corner bit num.
-  static constexpr const int oppcorner[8] = { -1, -1, -1, -1, 15, 12, 0, 3};
+  static constexpr const int oppcorner[8] = { -1, -1, -1, -1, 15, 12, 0, 3 };
 
-  
+
   static constexpr unsigned kLocalNeighborLookupTimeoutMsec = 8;
   static constexpr unsigned kLocalBusSignalTimeoutMsec = 4;
 
@@ -561,7 +577,7 @@ private:
         return;
       case kSendSetup:
         // Requests everyone else to drop their state.
-        
+
         // TODO: this reinit was here to ensure that the system starts up in a
         // definite state. However, it ended up causing infinite loops during
         // startup.
@@ -802,7 +818,7 @@ private:
 
   // Switch between first and second menu page.
   static constexpr unsigned kSecondMenu = 15;
-  
+
 
   // SECOND MENU PAGE
 
@@ -818,7 +834,7 @@ private:
   // Reinit all other nodes
   static constexpr unsigned kMenuRequestReInit = 19;
 
-  
+
 
   void ExitMenu() {
     menu_active_ = 0;
@@ -1118,6 +1134,12 @@ private:
 
   // Last direction we queried for the node in the head of the queue. -1 .. 3.
   int disc_neighbor_dir_ : 4;
+
+  // How many state reports have we seen since the last evolve.
+  uint8_t num_seen_{ 0 };
+  // How many loop invocations were there.
+  unsigned loop_count_{ 0 };
+
   // When should we emit the next evolution tick.
   uint32_t tick_timeout_;
   uint32_t evolution_speed_msec_{ Defs::kDefaultEvolutionSpeedMsec };

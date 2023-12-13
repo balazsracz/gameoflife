@@ -154,8 +154,14 @@ public:
     kStopAllLocal = 24,
     // Displays a debug pattern in geographical order.
     kGeoDebugFlow = 25,
-
-    // next = 26.
+    // Reports info about the last cycle for steady state detection.
+    kSteadyStateReport = 27,
+    // Reports info about the last cycle for steady state detection.
+    kLoopCountReport = 28,
+    // Reports info about CAN receive errors
+    kErrorReport = 29,
+    
+    // next = 30.
   };
 
   // Checks if an event belong to this protocol.
