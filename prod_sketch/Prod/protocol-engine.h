@@ -156,7 +156,7 @@ public:
   // Call this function when a global event arrives.
   // @param ev the 64-bit event payload.
   // @param src the source node alias that sent this event
-  void OnGlobalEvent(int64_t ev, uint16_t src) {
+  void OnGlobalEvent(uint64_t ev, uint16_t src) {
     if (!Defs::IsProtocolEvent(ev)) return;
     idle_timeout_ = iface_->millis() + 10;
     if (to_leader_election_) {
@@ -166,7 +166,7 @@ public:
     switch (cmd) {
       case Defs::kGlobalCmd:
         {
-          return HandleGlobalCommand(Defs::GetArg(ev), src);
+          return HandleGlobalCommand(Defs::GetArg(ev), Defs::GetX(ev), Defs::GetY(ev), src);
         }
       case Defs::kLocalAssign:
         {
@@ -258,7 +258,7 @@ public:
 private:
   // Called by the event handler when a global command event arrives.
   // @param arg the lowest bits of the event id (determine what to do).
-  void HandleGlobalCommand(uint16_t arg, uint16_t src) {
+  void HandleGlobalCommand(uint16_t arg, uint8_t x, uint8_t y, uint16_t src) {
     Defs::GlobalCommand gcmd = (Defs::GlobalCommand)arg;
     switch (gcmd) {
       case Defs::kReboot:
@@ -413,6 +413,31 @@ private:
           timeout_ = iface_->millis();
           return;
         }
+      case Defs::kOscTest:
+        {
+          auto m = iface_->millis();
+          if (y & 0x80) {
+            // First ever.
+            osctest_first_millis_ = m;
+            osctest_stride_ = x * 10;
+            osctest_remaining_ = y & 0x7F;
+          }
+          if (!y) {
+            // Last ever.
+            uint32_t expected = uint32_t(osctest_stride_) * osctest_remaining_;
+            uint32_t actual = m - osctest_first_millis_;
+            uint64_t r = actual;
+            r *= 100 * 256;
+            r /= expected;
+            r += (0x8000 - 100*256); // normalize
+            iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, (r >> 8) & 0xff, r & 0xff, Defs::kOscReport));
+            uint32_t oc = RCC->CR;
+            iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, (oc >> 8) & 0xff, (oc & 0xff) >> 3, Defs::kOscTrimReport));
+          }
+          osctest_last_millis_ = m;
+          return;
+        }
+           
     }
   }
 
@@ -1082,6 +1107,17 @@ private:
   static constexpr uint32_t INVALID_TIMEOUT = (uint32_t)-1;
   // millis() value when we should complete the current operation (marked by to_* variables)
   uint32_t timeout_{ INVALID_TIMEOUT };
+
+  // Oscillator test information.
+
+  // Millis timestamps when the last message hit.
+  uint32_t osctest_last_millis_;
+  // Millis timestamps when the first test hit.
+  uint32_t osctest_first_millis_;
+  // Stride of tests in millis.
+  uint16_t osctest_stride_;
+  // NUmber of tests remaining.
+  uint8_t osctest_remaining_;
 
   // Smallest alias that we know can be a leader.
   uint16_t leader_alias_;
