@@ -169,8 +169,10 @@ public:
     kOscReport = 31,
     // Osc trim report.
     kOscTrimReport = 32,
+    // Saves the osc trim value to flash.
+    kOscTrimSave = 33,
     
-    // next = 33.
+    // next = 34.
   };
 
   // Checks if an event belong to this protocol.

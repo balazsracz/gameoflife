@@ -5,6 +5,9 @@
 #include <queue>
 
 
+#include "stm32f0xx_ll_crs.h"
+
+
 // Implement this function for handling events coming from the local bus.
 // @param event a 64-bit payload determining what this event is.
 // @param src the sender of this event (12-bit unstable identifier)
@@ -107,6 +110,8 @@ struct can_frame {
 void GlobalBusSetup() {
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_CAN1_CLK_ENABLE();
+  __HAL_RCC_CRS_CLK_ENABLE();
+  LL_CRS_DeInit();
 
   GPIO_InitTypeDef GPIO_InitStruct;
   memset(&GPIO_InitStruct, 0, sizeof(GPIO_InitStruct));

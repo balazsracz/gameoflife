@@ -70,10 +70,55 @@ public:
     return 0;
   }
 
+  // This is where we store stuff in flash.
+  static constexpr uint32_t STORAGE_ADDRESS = 0x0801d800;
+  static constexpr uint32_t STORAGE_LEN = 2048;
+  // First byte should be this value.
+  static constexpr uint32_t STORAGE_MAGIC = 0x70cf5099;
+  // If a word has this as top 24 bits, then it's a trim value.
+  static constexpr uint32_t TRIM_MAGIC = 0x8823b000;
+  static constexpr uint32_t TRIM_MAGIC_MASK = 0xffffff00;
+
+  void InitStorage() {
+      FLASH_EraseInitTypeDef erase_init;
+      erase_init.TypeErase = FLASH_TYPEERASE_PAGES;
+      erase_init.PageAddress = STORAGE_ADDRESS;
+      erase_init.NbPages = 1;
+      uint32_t page_error;
+      HAL_FLASH_Unlock();
+      HAL_FLASHEx_Erase(&erase_init, &page_error);
+
+      HAL_FLASH_Program((uint32_t)FLASH_TYPEPROGRAM_WORD,
+                        STORAGE_ADDRESS, STORAGE_MAGIC);
+      HAL_FLASH_Lock();
+      storage_index_ = 4;
+  }
+  
   // Call this function once from setup().
   // @param iface implementation object proxying a variety of functions to the global state machines. Ownership is NOT transferred.
   void Setup(ProtocolEngineInterface* iface) {
     iface_ = iface;
+    const uint32_t* st = (const uint32_t*) STORAGE_ADDRESS;
+    if (*st != STORAGE_MAGIC) {
+      InitStorage();
+    }
+    {
+      uint32_t* sen = (uint32_t*)(STORAGE_ADDRESS + STORAGE_LEN);
+      ++st;
+      uint8_t trim = 0;
+      bool found_trim = false;
+      while (st < sen && *st != 0xffffffffu) {
+        if ((*st & TRIM_MAGIC_MASK) == TRIM_MAGIC) {
+          trim = *st & 0xff;
+          found_trim = true;
+        }
+        ++st;
+      }
+      storage_index_ = ((uint32_t)st) - STORAGE_ADDRESS;
+      if (found_trim) {
+        MODIFY_REG(CRS->CR, CRS_CR_TRIM, trim << CRS_CR_TRIM_Pos);
+      }
+    }
     InitState();
   }
 
@@ -432,12 +477,50 @@ private:
             r += (0x8000 - 100*256); // normalize
             iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, (r >> 8) & 0xff, r & 0xff, Defs::kOscReport));
             uint32_t oc = RCC->CR;
-            iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, (oc >> 8) & 0xff, (oc & 0xff) >> 3, Defs::kOscTrimReport));
+            uint32_t crscr = CRS->CR;
+            uint8_t trim = (crscr >> 8) & 0xff;
+            uint8_t oldtrim = trim;
+            bool updated = false;
+            if (r > 0x8050) {
+              // trim to be slower. Decrease.
+              trim -= 2;
+              updated = true;
+            } else if (r > 0x8012) { 
+              // trim to be slower. Decrease.
+              trim -= 1;
+              updated = true;
+            } else if (r < 0x7fB0) {
+              // trim to be faster. Increase.
+              trim += 2;
+              updated = true;
+            } else if (r < 0x7fed) {
+              // trim to be faster. Increase.
+              trim += 1;
+              updated = true;
+            }
+            if (updated) {
+              crscr = crscr & ~0x3F00;
+              crscr = crscr | (trim << 8);
+              CRS->CR = crscr;
+            }
+            iface_->SendEvent(Defs::CreateEvent(Defs::kGlobalCmd, trim, oldtrim, Defs::kOscTrimReport));
           }
           osctest_last_millis_ = m;
           return;
         }
-           
+      case Defs::kOscTrimSave: {
+        if (storage_index_ >= STORAGE_LEN) {
+          InitStorage();
+        }
+        uint32_t crscr = CRS->CR;
+        uint8_t trim = (crscr >> 8) & 0x3f;
+        HAL_FLASH_Unlock();
+        HAL_FLASH_Program((uint32_t)FLASH_TYPEPROGRAM_WORD,
+                          STORAGE_ADDRESS + storage_index_, TRIM_MAGIC | trim);
+        HAL_FLASH_Lock();
+        storage_index_ += 4;
+        return;
+      }
     }
   }
 
@@ -1118,6 +1201,9 @@ private:
   uint16_t osctest_stride_;
   // NUmber of tests remaining.
   uint8_t osctest_remaining_;
+
+  // Next available storage cell in byte offset 0..STORAGE_LEN.
+  uint16_t storage_index_ {0};
 
   // Smallest alias that we know can be a leader.
   uint16_t leader_alias_;
