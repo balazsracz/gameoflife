@@ -1011,9 +1011,9 @@ private:
           AddBit(x, y, 0, 0, btn);
           return;
         case kAddTrio:
+          AddBit(x, y, -1, 0, btn);
           AddBit(x, y, 0, 0, btn);
           AddBit(x, y, 1, 0, btn);
-          AddBit(x, y, 2, 0, btn);
           return;
         case kAddRandomGlider:
           AddGlider(rand() % 4, x, y, btn);
